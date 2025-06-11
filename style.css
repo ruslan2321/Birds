@@ -38,3 +38,7 @@
 		border-radius: 10px;
 		color: white;
 	}
+	.modal-footer{
+		display: flex;
+		justify-content: center;
+	}

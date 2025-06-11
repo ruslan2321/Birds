@@ -79,11 +79,23 @@
                   required
                 />
               </div>
-             
+              <div class="mb-3">
+                <label for="minSpeed" class="form-label"
+                  >Минимальная скорость</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  id="minSpeed"
+                  step="0.1"
+                  min="0.1"
+                  value="2"
+                  required
+                />
               </div>
               <div class="mb-3">
                 <label for="maxSpeed" class="form-label"
-                  > скорость</label
+                  >Максимальная скорость</label
                 >
                 <input
                   type="number"
@@ -97,7 +109,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button type="submit" class="btn btn-success">Сохранить</button>
+              <button type="submit" class="save">Сохранить</button>
             </div>
           </form>
         </div>
