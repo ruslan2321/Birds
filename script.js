@@ -18,7 +18,7 @@
       mouseY = e.clientY;
     });
 
-    function launchBirds(count, imageSrc, maxSpeed) {
+    function launchBirds(count, imageSrc,minSpeed, maxSpeed) {
       for (let i = 0; i < count; i++) {
         const img = document.createElement("img");
         img.src = imageSrc;
@@ -42,6 +42,7 @@
       e.preventDefault();
       settings.doveCount = parseInt(document.getElementById("doveCount").value);
       settings.hawkCount = parseInt(document.getElementById("hawkCount").value);
+      settings.minSpeed = parseInt(document.getElementById('minSpeed').value);
       settings.maxSpeed = parseFloat(document.getElementById("maxSpeed").value);
 
       if (settings.minSpeed > settings.maxSpeed) {
