@@ -1,77 +1,40 @@
-* {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-	outline: none;
-}
-body {
-	background-image: url('./img/bg.png');
-	background-size: cover;
-}
-.bird {
+ body {
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      background-image: url('./img/bg.png');
+	  background-size: cover;
+      position: relative;
+    }
+    .bird {
       position: absolute;
       width: 40px;
       transition: transform 0.05s linear;
       pointer-events: none;
-}
-.containers {
-	display: flex;
-	justify-content: center;
-	flex-direction: column;
-	align-items: center;
-	height: 100vh;
-	gap: 3rem;
-}
-.container {
-	display: flex;
-	justify-content: center;
-	gap: 1rem;
-}
-h1 {
-	color: white;
-	font-family: Arial, Helvetica, sans-serif;
-}
-button {
-	height: 3rem;
-	width: 10rem;
-	border-radius: 10px;
-	border: none;
-	background-color: #f2ac0e;
-	color: white;
-	font-weight: 600;
-	transition: 0.5s;
-	cursor: pointer;
-}
-button:hover {
-	transform: scale(1.1);
-}
-/* стили птиц */
-.pigeon,
-.hawk {
-	position: absolute;
-	width: 10px;
-	height: 10px;
-	background-color: white;
-}
-.moduleWindow {
-	font-family: Arial, Helvetica, sans-serif;
-	display: none;
-	position: absolute;
-	width: 33rem;
-	gap: 2rem;
-	height: 30rem;
-	border-radius: 10px;
-	background-color: white;
-	flex-direction: column;
-	align-content: center;
-	justify-content: center;
-	align-items: center;
-	
-}
-.moduleWindow>input{
-	border: none;
-	border-bottom: 1px solid ;
-}
-.moduleWindow>input:focus{
-	border-bottom-color: #FF8000;
-}
+    }
+	.containers{
+		height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap:1rem;
+		flex-direction: column;
+	}
+	h1{
+		color: white;
+	}
+	.container{
+		display: flex;
+		
+		gap: 1rem;
+		align-items: center;
+		justify-content: center;
+	}
+	button{
+		background-color: #ff8000;
+		border: none;
+		width: 10rem;
+		height: 3rem;
+		border-radius: 10px;
+		color: white;
+	}
