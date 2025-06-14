@@ -1,88 +1,162 @@
- const birds = [];
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
+// Получение элементов DOM
+const canvas = document.getElementById('canvas')
+const ctx = canvas.getContext('2d')
+const startBtn = document.getElementById('startBtn')
+const settingsBtn = document.getElementById('settingsBtn')
+const settingsModal = document.getElementById('settingsModal')
+const closeModalBtn = document.querySelector('.close')
+const applySettingsBtn = document.getElementById('applySettings')
 
-    const doveImage = "./img/hawk.png";
-    const hawkImage = "./img/pegion.png";
+// Настройка canvas для высокой плотности пикселей
+const dpr = window.devicePixelRatio || 1
+canvas.width = 800 * dpr // Внутреннее разрешение
+canvas.height = 600 * dpr
+ctx.scale(dpr, dpr) // Масштабирование контекста
+canvas.style.width = '1542px' // Логический размер
+canvas.style.height = '705px'
 
-    // Значения по умолчанию
-    let settings = {
-      doveCount: 5,
-      hawkCount: 5,
-      minSpeed: 2,
-      maxSpeed: 4
-    };
+// Инициализация массивов и переменных
+let hawks = []
+let doves = []
+let animationId = null
+let isRunning = false
 
-    document.addEventListener("mousemove", (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-    });
+// Размер изображений (в логических пикселях)
+const birdWidth = 30
+const birdHeight = 35
 
-    function launchBirds(count, imageSrc,minSpeed, maxSpeed) {
-      for (let i = 0; i < count; i++) {
-        const img = document.createElement("img");
-        img.src = imageSrc;
-        img.classList.add("bird");
+// Загрузка изображений
+const hawkImg = new Image()
+hawkImg.src = 'img/hawk.png' // Укажите путь к изображению ястреба (рекомендуется 40x40 или 80x80 для Retina)
+const doveImg = new Image()
+doveImg.src = 'img/dove.png' // Укажите путь к изображению голубя
 
-        img.style.left = Math.random() * window.innerWidth + "px";
-        img.style.top = Math.random() * window.innerHeight + "px";
+// Проверка загрузки изображений
+let imagesLoaded = 0
+const totalImages = 2
+hawkImg.onload = () => {
+	imagesLoaded++
+	if (imagesLoaded === totalImages) initializeBirds(5, 10, 2)
+}
+hawkImg.onerror = () => console.error('Ошибка загрузки изображения ястреба')
+doveImg.onload = () => {
+	imagesLoaded++
+	if (imagesLoaded === totalImages) initializeBirds(5, 10, 2)
+}
+doveImg.onerror = () => console.error('Ошибка загрузки изображения голубя')
 
-        document.body.appendChild(img);
-        birds.push({
-          element: img,
-          x: parseFloat(img.style.left),
-          y: parseFloat(img.style.top),
-          speed: minSpeed + Math.random() * (maxSpeed - minSpeed)
-        });
-      }
-    }
+// Класс для птиц
+class Bird {
+	constructor(x, y, speed, type) {
+		this.x = x
+		this.y = y
+		this.speed = speed
+		this.type = type
+		this.angle = Math.random() * 2 * Math.PI
+		this.changeDirectionTimer = 0
+	}
 
-    // Сохранение настроек из формы
-    document.getElementById("settingsForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-      settings.doveCount = parseInt(document.getElementById("doveCount").value);
-      settings.hawkCount = parseInt(document.getElementById("hawkCount").value);
-      settings.minSpeed = parseInt(document.getElementById('minSpeed').value);
-      settings.maxSpeed = parseFloat(document.getElementById("maxSpeed").value);
+	update() {
+		// Случайное изменение направления каждые 30-60 кадров
+		this.changeDirectionTimer++
+		if (this.changeDirectionTimer > Math.random() * 30 + 30) {
+			this.angle += ((Math.random() - 0.5) * Math.PI) / 2
+			this.changeDirectionTimer = 0
+		}
 
-      if (settings.minSpeed > settings.maxSpeed) {
-        alert("Минимальная скорость не может быть больше максимальной!");
-        return;
-      }
+		// Обновление позиции
+		this.x += Math.cos(this.angle) * this.speed
+		this.y += Math.sin(this.angle) * this.speed
 
-      const modal = bootstrap.Modal.getInstance(document.getElementById("settingsModal"));
-      modal.hide();
-    });
+		// Отражение от границ
+		if (this.x < 0 || this.x > 800 - birdWidth) {
+			// Логический размер canvas
+			this.angle = Math.PI - this.angle
+			this.x = Math.max(0, Math.min(800 - birdWidth, this.x))
+		}
+		if (this.y < 0 || this.y > 600 - birdHeight) {
+			this.angle = -this.angle
+			this.y = Math.max(0, Math.min(600 - birdHeight, this.y))
+		}
+	}
 
-    // Кнопка запуска
-    document.getElementById("launchBtn").addEventListener("click", () => {
-      launchBirds(settings.doveCount, doveImage, settings.minSpeed, settings.maxSpeed);
-      launchBirds(settings.hawkCount, hawkImage, settings.minSpeed, settings.maxSpeed);
+	draw() {
+		ctx.save()
+		ctx.translate(this.x + birdWidth / 2, this.y + birdHeight / 2)
+		ctx.rotate(this.angle)
+		ctx.imageSmoothingEnabled = true // Включено для плавного масштабирования
+		ctx.drawImage(
+			this.type === 'hawk' ? hawkImg : doveImg,
+			-birdWidth / 2,
+			-birdHeight / 2,
+			birdWidth,
+			birdHeight
+		)
+		ctx.restore()
+	}
+}
 
-      document.getElementById('launchBtn').style.opacity = 0; 
-      document.getElementById('launchBtn').style.transition = '0.5s'; 
-      document.getElementById('setting').style.opacity = 0;
-      document.getElementById('setting').style.transition = '0.5s ';
+// Инициализация птиц
+function initializeBirds(hawkCount, doveCount, speed) {
+	hawks = []
+	doves = []
+	for (let i = 0; i < hawkCount; i++) {
+		hawks.push(
+			new Bird(
+				Math.random() * (800 - birdWidth),
+				Math.random() * (600 - birdHeight),
+				speed,
+				'hawk'
+			)
+		)
+	}
+	for (let i = 0; i < doveCount; i++) {
+		doves.push(
+			new Bird(
+				Math.random() * (800 - birdWidth),
+				Math.random() * (600 - birdHeight),
+				speed,
+				'dove'
+			)
+		)
+	}
+}
 
-    });
+// Функция анимации
+function animate() {
+	ctx.clearRect(0, 0, 800 * dpr, 600 * dpr) // Очистка с учётом dpr
+	;[...hawks, ...doves].forEach(bird => {
+		bird.update()
+		bird.draw()
+	})
+	animationId = requestAnimationFrame(animate)
+}
 
-    function animateBirds() {
-      birds.forEach(bird => {
-        let dx = mouseX - bird.x;
-        let dy = mouseY - bird.y;
-        let distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance > 1) {
-          bird.x += (dx / distance) * bird.speed;
-          bird.y += (dy / distance) * bird.speed;
+// Обработчики событий
+startBtn.addEventListener('click', () => {
+	if (!isRunning) {
+		startBtn.textContent = 'Стоп'
+		isRunning = true
+		animate()
+	} else {
+		startBtn.textContent = 'Старт'
+		isRunning = false
+		cancelAnimationFrame(animationId)
+	}
+})
 
-          bird.element.style.left = bird.x + "px";
-          bird.element.style.top = bird.y + "px";
+settingsBtn.addEventListener('click', () => {
+	settingsModal.style.display = 'flex'
+})
 
-          const angle = Math.atan2(dy, dx);
-          bird.element.style.transform = `rotate(${angle}rad)`;
-        }
-      });
-      requestAnimationFrame(animateBirds);
-    }
+closeModalBtn.addEventListener('click', () => {
+	settingsModal.style.display = 'none'
+})
 
-    animateBirds();
+applySettingsBtn.addEventListener('click', () => {
+	const hawkCount = parseInt(document.getElementById('hawkCount').value) || 5
+	const doveCount = parseInt(document.getElementById('doveCount').value) || 10
+	const speed = parseFloat(document.getElementById('speed').value) || 2
+	initializeBirds(hawkCount, doveCount, speed)
+	settingsModal.style.display = 'none'
+})

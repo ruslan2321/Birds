@@ -1,44 +1,77 @@
- body {
-      height: 100vh;
-      margin: 0;
-      overflow: hidden;
-      background-image: url('./img/bg.png');
-	  background-size: cover;
-      position: relative;
-    }
-    .bird {
-      position: absolute;
-      width: 40px;
-      transition: transform 0.05s linear;
-      pointer-events: none;
-    }
-	.containers{
-		height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap:1rem;
-		flex-direction: column;
-	}
-	h1{
-		color: white;
-	}
-	.container{
-		display: flex;
-		
-		gap: 1rem;
-		align-items: center;
-		justify-content: center;
-	}
-	button{
-		background-color: #ff8000;
-		border: none;
-		width: 10rem;
-		height: 3rem;
-		border-radius: 10px;
-		color: white;
-	}
-	.modal-footer{
-		display: flex;
-		justify-content: center;
-	}
+/* Общие стили */
+body {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	font-family: Arial, sans-serif;
+	background-image: url('./img/bg.png');
+	background-size: cover;
+	overflow: hidden;
+}
+
+/* Панель управления */
+#controls {
+	margin: 10px;
+}
+
+/* Стили кнопок */
+button {
+	padding: 10px 20px;
+	margin: 5px;
+	cursor: pointer;
+	background-color: #3898ff;
+	color: white;
+	border: none;
+	border-radius: 5px;
+}
+
+button:hover {
+	background-color: #3898ff;
+}
+
+/* Стили canvas */
+#canvas {
+	width: 1920px; /* Логический размер */
+	height: 1080px;
+}
+
+/* Стили модального окна */
+.modal {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0,0,0,0.5);
+	justify-content: center;
+	align-items: center;
+}
+
+.modal-content {
+	background-color: white;
+	padding: 20px;
+	border-radius: 5px;
+	width: 300px;
+	text-align: center;
+}
+
+.modal-content input {
+	margin: 10px 0;
+	padding: 5px;
+	width: 100px;
+}
+
+/* Кнопка закрытия модального окна */
+.close {
+	color: #aaa;
+	float: right;
+	font-size: 28px;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+.close:hover {
+	color: black;
+}
