@@ -28,6 +28,7 @@ function SettingsModal({ settings, onApply, onClose }) {
          }}
          variant="outlined"
           value={hawkCount}
+          max={40}
            valueLabelDisplay="auto"
           onChange={(e) => setHawkCount(e.target.value)}
         /><br />
@@ -38,6 +39,7 @@ function SettingsModal({ settings, onApply, onClose }) {
          }}
          variant="outlined"
           valueLabelDisplay="auto"
+          max={40}
           value={doveCount}
           onChange={(e) => setDoveCount(e.target.value)}
         /><br />
@@ -48,6 +50,7 @@ function SettingsModal({ settings, onApply, onClose }) {
          }}
          variant="outlined"
           valueLabelDisplay="auto"
+          max={5}
           value={speed}
           onChange={(e) => setSpeed(e.target.value)}
         /><br/>

@@ -4,8 +4,7 @@ import Button from '@mui/material/Button';
 import './SettingsModal'
 import '../styles/SimulationCanvas.css';
 
-const btn = document.querySelector('.btn')
-const start = document.querySelector('.start')
+
 
 function SimulationCanvas({ settings }) {
   const canvasRef = useRef(null);
@@ -17,7 +16,7 @@ function SimulationCanvas({ settings }) {
 
 const birdWidth = 40;
   const birdHeight = 40;
-  const framesPerSprite = 10; 
+  const framesPerSprite = 9; 
 
   // Загрузка изображений
  const hawkImgs = [new Image(), new Image()];
@@ -137,6 +136,8 @@ const birdWidth = 40;
   }, [settings]);
 
   const toggleAnimation = () => {
+    const btn = document.getElementsByClassName('btn')
+  const start = document.getElementsByClassName('start')
     animate(btn,{scale: 0})
     animate(start,{scale: 0})
 
