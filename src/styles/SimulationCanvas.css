@@ -11,3 +11,9 @@
   width: 1422px;
   height: 521px;
 }
+@media (max-width: 990px) {
+  .simulation-canvas{
+    width: 36rem;
+    height: 78rem;
+  }
+}
