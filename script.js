@@ -9,7 +9,7 @@ const applySettingsBtn = document.getElementById('applySettings')
 
 // Настройка canvas для высокой плотности пикселей
 const dpr = window.devicePixelRatio || 1
-canvas.width = 800 * dpr // Внутреннее разрешение
+canvas.width = 700 * dpr // Внутреннее разрешение
 canvas.height = 600 * dpr
 ctx.scale(dpr, dpr) // Масштабирование контекста
 canvas.style.width = '1542px' // Логический размер
@@ -27,9 +27,9 @@ const birdHeight = 35
 
 // Загрузка изображений
 const hawkImg = new Image()
-hawkImg.src = 'img/hawk.png' // Укажите путь к изображению ястреба (рекомендуется 40x40 или 80x80 для Retina)
+hawkImg.src = 'img/hawk.png' //  путь к изображению ястреба 
 const doveImg = new Image()
-doveImg.src = 'img/dove.png' // Укажите путь к изображению голубя
+doveImg.src = 'img/dove.png' //  путь к изображению голубя
 
 // Проверка загрузки изображений
 let imagesLoaded = 0

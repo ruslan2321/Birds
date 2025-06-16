@@ -55,6 +55,8 @@ button:hover {
 	border-radius: 5px;
 	width: 300px;
 	text-align: center;
+	display: flex;
+	align-items: center;
 }
 
 .modal-content input {
