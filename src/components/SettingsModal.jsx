@@ -11,8 +11,8 @@ function SettingsModal({ settings, onApply, onClose }) {
   const handleApply = () => {
     onApply({
       hawkCount: parseInt(hawkCount) || 5,
-      doveCount: parseInt(doveCount) || 10,
-      speed: parseFloat(speed) || 2,
+      doveCount: parseInt(doveCount) || 5,
+      speed: parseFloat(speed) || 4,
     });
   };
 

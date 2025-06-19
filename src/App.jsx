@@ -15,7 +15,7 @@ function App() {
   return (
     <div className="app">
       <div className="controls">
-        <Button onClick={() => setIsModalOpen(true)} variant="contained" className='btn'>Настройки</Button>
+        <Button onClick={() => setIsModalOpen(true)} variant="contained" className='setting'>Настройки</Button>
       </div>
       <SimulationCanvas settings={settings} />
       {isModalOpen && (
