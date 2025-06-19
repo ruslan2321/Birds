@@ -1,15 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import '../App'
-import { Button } from '@mui/material';
 import '../styles/SimulationCanvas.css';
-import { animate } from 'animejs';
 
 
 
-function SimulationCanvas({ settings }) {
+
+function SimulationCanvas({ settings, isRunning, setIsImagesLoaded  }) {
   const canvasRef = useRef(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isImagesLoaded, setIsImagesLoaded] = useState(false);
+ const [isImagesLoaded, setIsImagesLoadedLocal] = useState(true);
   const animationIdRef = useRef(null);
   const hawksRef = useRef([]);
   const dovesRef = useRef([]);
@@ -50,7 +48,7 @@ function SimulationCanvas({ settings }) {
   const fallbackDoveFalling = 'https://via.placeholder.com/80/ADD8E6/000000?text=DF';
 
 
-  class Bird {
+ class Bird {
     constructor(x, y, speed, type) {
       this.x = x;
       this.y = y;
@@ -69,12 +67,12 @@ function SimulationCanvas({ settings }) {
         this.fallVelocity += gravity;
         this.y += this.fallVelocity;
         this.fallRotation += rotationSpeed;
-        if (this.y > 600 - birdHeight) {
+        if (this.y >= 600 - birdHeight) {
           this.y = 600 - birdHeight;
           this.fallVelocity = 0;
           this.fallRotation = 0;
           this.fadeTimer++;
-           if (this.fadeTimer >= fadeDelay) {
+          if (this.fadeTimer >= fadeDelay) {
             dovesRef.current = dovesRef.current.filter(d => d !== this);
           }
         }
@@ -107,9 +105,8 @@ function SimulationCanvas({ settings }) {
       let img = this.isFalling
         ? doveFallingImgs[frame]
         : this.type === 'hawk' ? hawkImgs[frame] : doveImgs[frame];
-
       if (!(img instanceof HTMLImageElement) || !img.complete || img.naturalWidth === 0) {
-        console.warn(`Invalid image for ${this.type} at frame ${frame}, using placeholder`);
+        console.warn(`Invalid image for ${this.type} at frame ${frame}, src: ${img.src}, using placeholder`);
         img = new Image();
         img.src = defaultPlaceholder;
       }
@@ -159,12 +156,16 @@ function SimulationCanvas({ settings }) {
     }
   };
 
-  const anim = (ctx) => {
-    if (!isImagesLoaded) return;
+  // Animation loop
+  const animate = (ctx) => {
+    if (!isImagesLoaded || !isRunning) {
+      cancelAnimationFrame(animationIdRef.current);
+      return;
+    }
     ctx.clearRect(0, 0, 800 * window.devicePixelRatio, 600 * window.devicePixelRatio);
-    frameCounterRef.current = (frameCounterRef.current + 1) % (framesPerSprite * 4);
+    frameCounterRef.current = (frameCounterRef.current + 1) % (framesPerSprite * 2);
     const currentFrame = Math.floor(frameCounterRef.current / framesPerSprite);
-    if (currentFrame < 0 || currentFrame >= 4) {
+    if (currentFrame < 0 || currentFrame >= 2) {
       console.warn(`Invalid frame index: ${currentFrame}`);
       return;
     }
@@ -173,7 +174,7 @@ function SimulationCanvas({ settings }) {
       bird.update();
       bird.draw(ctx, currentFrame);
     });
-    animationIdRef.current = requestAnimationFrame(() => anim(ctx));
+    animationIdRef.current = requestAnimationFrame(() => animate(ctx));
   };
 
   useEffect(() => {
@@ -194,7 +195,8 @@ function SimulationCanvas({ settings }) {
         imagesLoaded++;
         console.log(`Loaded image: ${src} (${imagesLoaded}/${totalImages})`);
         if (imagesLoaded === totalImages) {
-          setIsImagesLoaded(true);
+          setIsImagesLoadedLocal(true);
+         /*  setIsImagesLoaded(); // Update parent state */
           initializeBirds();
         }
       }
@@ -205,7 +207,6 @@ function SimulationCanvas({ settings }) {
         console.error(`Failed to load image: ${src}`);
         loadedImages.add(src);
         imagesLoaded++;
-      
         hawkImgs.forEach(img => {
           if (img.src.includes('hawk') && img.naturalWidth === 0) img.src = fallbackHawk;
         });
@@ -216,42 +217,44 @@ function SimulationCanvas({ settings }) {
           if (img.src.includes('falling') && img.naturalWidth === 0) img.src = fallbackDoveFalling;
         });
         if (imagesLoaded === totalImages) {
+          setIsImagesLoadedLocal(true);
           setIsImagesLoaded(true);
           initializeBirds();
         }
       }
     };
 
-    // Attach load/error handlers
     [...hawkImgs, ...doveImgs, ...doveFallingImgs].forEach(img => {
       if (!img.src.startsWith('data:')) {
         img.onload = () => onImageLoad(img.src);
         img.onerror = () => onImageError(img.src);
       } else {
-        onImageLoad(img.src); 
+        onImageLoad(img.src);
       }
     });
 
     return () => cancelAnimationFrame(animationIdRef.current);
-  }, [settings]);
+  }, [settings, setIsImagesLoaded]);
 
-  const toggleAnimation = () => {
-    const btn =  document.querySelector('.start')
-    const setting = document.querySelector('.setting')
-    animate(btn,{opacity: 0, scale: 0})
-    animate(setting, {opacity: 0, scale: 0})
+  useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    setIsRunning(true);
-    anim(ctx);
-};
+    console.log(`Animation state: isRunning=${isRunning}, isImagesLoaded=${isImagesLoaded}`);
+    if (isImagesLoaded && isRunning) {
+      console.log('Starting animation');
+      animate(ctx);
+    } else {
+      console.log('Stopping animation');
+      cancelAnimationFrame(animationIdRef.current);
+    }
+    return () => cancelAnimationFrame(animationIdRef.current);
+  }, [isRunning, isImagesLoaded]);
+
+
 
   return (
     <div className="canvas-container">
-      <Button onClick={toggleAnimation} disabled={!isImagesLoaded} variant="contained" className='start'>
-        {isRunning ? 'Стоп' : 'Старт'}
-      </Button>
-      {!isImagesLoaded && <p>Загрузка изображений....</p>}
+      {!isImagesLoaded && <p>Загрузка изображений...</p>}
       <canvas ref={canvasRef} className="simulation-canvas" />
     </div>
   );
