@@ -7,7 +7,7 @@ import '../styles/SimulationCanvas.css';
 
 function SimulationCanvas({ settings, isRunning, setIsImagesLoaded  }) {
   const canvasRef = useRef(null);
- const [isImagesLoaded, setIsImagesLoadedLocal] = useState(true);
+const [isImagesLoaded, setIsImagesLoadedLocal] = useState(true);
   const animationIdRef = useRef(null);
   const hawksRef = useRef([]);
   const dovesRef = useRef([]);
@@ -17,9 +17,9 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded  }) {
   const birdHeight = 40;
   const framesPerSprite = 9;
   const collisionRadius = birdWidth / 2;
-  const gravity = 0.5;
+  const gravity = 0.2;
   const rotationSpeed = 0.05;
-  const fadeDelay = 20;
+  const fadeDelay = 60;
 
   // Initialize sprite arrays
   const hawkImgs = Array(4).fill().map(() => new Image());
