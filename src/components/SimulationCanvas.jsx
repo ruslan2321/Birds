@@ -42,7 +42,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
     return img;
   });
   const doveFallingImg = new Image();
-  doveFallingImg.src = '/image/dove_falling1.png';
+  doveFallingImg.src = '/image/dove_falling4.png';
 
   // Линейная интерполяция
   const lerp = (start, end, t) => start + (end - start) * t;
