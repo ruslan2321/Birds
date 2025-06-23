@@ -8,20 +8,22 @@
 
 .bird-counter{
     display: flex;
+    align-items: center;
     margin-top: 1rem;
-    gap: 1rem;
+    background-color: #0093e3;
     color: rgb(255, 255, 255);
+    border-radius: 10px;
 }
 .hawk, .dove{
   display: flex;
   justify-content: center;
+  align-items: center;
   border-radius: 10px;
   font-family: 'Roboto', sans-serif;
-  background-color: #1586a6de;
-  box-shadow: 9px 6px 14px gray;
-  width: 8rem;
-  height: 2.5rem;
-  font-size: 13px;
+  width: 6rem;
+  padding: 3px;
+  height: 2rem;
+  font-size: 14px;
 }
 
 
