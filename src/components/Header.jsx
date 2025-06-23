@@ -17,6 +17,9 @@ function Header({ isRunning, setIsRunning, setIsModalOpen }) {
         onClick={() => setIsModalOpen(true)}
         className="header-button"
         variant="contained"
+        sx={{
+          backgroundColor: '#cc1414',
+        }}
       >
         Настройки
       </Button>

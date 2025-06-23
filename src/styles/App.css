@@ -3,7 +3,7 @@
   flex-direction: column;
   align-items: center;
   font-family: Arial, sans-serif;
-  background-image: url('/image/bg.png');
+  background-image: url('/image/bg.jpg');
   background-size: cover;
   min-height: 100vh;
 }

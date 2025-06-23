@@ -1,261 +1,278 @@
-import React, { useRef, useEffect, useState } from 'react';
-import '../App'
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import '../styles/SimulationCanvas.css';
 
-
-
-
-function SimulationCanvas({ settings, isRunning, setIsImagesLoaded  }) {
+function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
+  // Состояние и референсы
+  const [hawkCount, setHawkCount] = useState(settings.hawkCount);
+  const [doveCount, setDoveCount] = useState(settings.doveCount);
   const canvasRef = useRef(null);
-const [isImagesLoaded, setIsImagesLoadedLocal] = useState(true);
-  const animationIdRef = useRef(null);
+  const animationRef = useRef(null);
   const hawksRef = useRef([]);
   const dovesRef = useRef([]);
   const frameCounterRef = useRef(0);
 
-  const birdWidth = 40;
-  const birdHeight = 40;
-  const framesPerSprite = 9;
-  const collisionRadius = birdWidth / 2;
-  const gravity = 0.2;
-  const rotationSpeed = 0.05;
-  const fadeDelay = 60;
+  // Константы
+  const birdWidth = 45; // Ширина птицы
+  const birdHeight = 45; // Высота птицы
+  const framesPerSprite = 10; // Кадров на спрайт
+  const collisionRadius = birdWidth / 2; // Радиус столкновений
+  const gravity = 0.08 // Гравитация для падения
+  const fadeDelay = 60; // Задержка затухания (~1 секунда)
+  const lerpFactor = 0.1; // Фактор плавности движения
+  const canvasWidth = 1422; // Ширина канваса
+  const canvasHeight = 519; // Высота канваса
 
-  // Initialize sprite arrays
-  const hawkImgs = Array(4).fill().map(() => new Image());
-  hawkImgs[0].src = '/image/hawk-sprait1.png';
-  hawkImgs[1].src = '/image/hawk-sprait2.png';
-  hawkImgs[2].src = '/image/hawk-sprait3.png';
-  hawkImgs[3].src = '/image/hawk-sprait4.png';
+  // Проценты для счетчика
+  const { dovePercentage, hawkPercentage } = useMemo(() => {
+    const totalBirds = hawkCount + doveCount;
+    const dovePercentage = totalBirds > 0 ? ((doveCount / totalBirds) * 100).toFixed(0) : 0;
+    const hawkPercentage = totalBirds > 0 ? ((hawkCount / totalBirds) * 100).toFixed(0) : 0;
+    return { dovePercentage, hawkPercentage };
+  }, [hawkCount, doveCount]);
 
+  // Спрайты
+  const hawkImgs = Array(4).fill().map((_, i) => {
+    const img = new Image();
+    img.src = `/image/hawk-sprait${i + 1}.png`;
+    return img;
+  });
+  const doveImgs = Array(4).fill().map((_, i) => {
+    const img = new Image();
+    img.src = `/image/dove-sprait${i + 1}.png`;
+    return img;
+  });
+  const doveFallingImg = new Image();
+  doveFallingImg.src = '/image/dove_falling1.png';
 
-  const doveImgs = Array(4).fill().map(() => new Image());
-  doveImgs[0].src = '/image/dove-sprait1.png';
-  doveImgs[1].src = '/image/dove-sprait2.png';
-  doveImgs[2].src = '/image/dove-sprait3.png';
-  doveImgs[3].src = '/image/dove-sprait4.png';
+  // Линейная интерполяция
+  const lerp = (start, end, t) => start + (end - start) * t;
 
+  // Нормализация угла
+  const normalizeAngle = (angle) => {
+    while (angle > Math.PI) angle -= 2 * Math.PI;
+    while (angle < -Math.PI) angle += 2 * Math.PI;
+    return angle;
+  };
 
-  const doveFallingImgs = Array(4).fill().map(() => new Image());
-  doveFallingImgs[0].src = '/image/dove_falling1.png';
-  doveFallingImgs[1].src = '/image/dove_falling2.png';
-  doveFallingImgs[2].src = '/image/dove_falling3.png';
-  doveFallingImgs[3].src = '/image/dove_falling4.png';
-
-
-  const fallbackHawk = 'https://via.placeholder.com/80/8B0000/FFFFFF?text=H';
-  const fallbackDove = 'https://via.placeholder.com/80/ADD8E6/000000?text=D';
-  const fallbackDoveFalling = 'https://via.placeholder.com/80/ADD8E6/000000?text=DF';
-
-
- class Bird {
+  // Класс птицы
+  class Bird {
     constructor(x, y, speed, type) {
-      this.x = x;
-      this.y = y;
-      this.speed = speed;
-      this.type = type;
-      this.angle = Math.random() * 2 * Math.PI;
-      this.changeDirectionTimer = 0;
-      this.isFalling = false;
-      this.fallVelocity = 0;
-      this.fallRotation = 0;
-      this.fadeTimer = 0;
+      this.x = x; // Начальная позиция X
+      this.y = y; // Начальная позиция Y
+      this.currentX = x; // Текущая позиция X для отрисовки
+      this.currentY = y; // Текущая позиция Y для отрисовки
+      this.goalX = x; // Целевая позиция X
+      this.goalY = y; // Целевая позиция Y
+      this.speed = speed; // Скорость движения
+      this.type = type; // Тип: 'hawk' или 'dove'
+      this.angle = Math.random() * 2 * Math.PI; // Случайный начальный угол
+      this.currentAngle = this.angle; // Текущий угол для отрисовки
+      this.goalAngle = this.angle; // Целевой угол направления
+      this.changeDirectionTimer = 0; // Таймер для смены направления
+      this.isFalling = false; // Падает ли птица
+      this.fallVelocity = 0; // Скорость падения
+      this.fadeTimer = 0; // Таймер затухания
+      this.opacity = 1; // Прозрачность
+      this.fallAngle = 0; // Фиксированный угол при падении
+      this.remove = false; // Флаг для удаления
     }
 
     update() {
       if (this.isFalling) {
+        // Падающая птица: движется только вниз
         this.fallVelocity += gravity;
-        this.y += this.fallVelocity;
-        this.fallRotation += rotationSpeed;
-        if (this.y >= 600 - birdHeight) {
-          this.y = 600 - birdHeight;
+        this.goalY += this.fallVelocity;
+        if (this.goalY >= canvasHeight - birdHeight) {
+          this.goalY = canvasHeight - birdHeight;
           this.fallVelocity = 0;
-          this.fallRotation = 0;
           this.fadeTimer++;
           if (this.fadeTimer >= fadeDelay) {
-            dovesRef.current = dovesRef.current.filter(d => d !== this);
+            this.remove = true; // Помечаем для удаления
+            return;
+          }
+          if (this.fadeTimer >= 1) {
+            this.opacity = 1 - this.fadeTimer / fadeDelay;
           }
         }
       } else {
+        // Летающая птица: меняет направление и движется
         this.changeDirectionTimer++;
         if (this.changeDirectionTimer > Math.random() * 30 + 30) {
-          this.angle += (Math.random() - 0.5) * Math.PI / 2;
+          this.goalAngle = normalizeAngle(this.goalAngle + (Math.random() - 0.5) * Math.PI);
           this.changeDirectionTimer = 0;
         }
 
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
+        // Обновляем целевую позицию
+        this.goalX += Math.cos(this.goalAngle) * this.speed;
+        this.goalY += Math.sin(this.goalAngle) * this.speed;
 
-        if (this.x < 0 || this.x > 800 - birdWidth) {
-          this.angle = Math.PI - this.angle;
-          this.x = Math.max(0, Math.min(800 - birdWidth, this.x));
+        // Ограничиваем движение внутри канваса с отражением
+        if (this.goalX < 0) {
+          this.goalX = -this.goalX;
+          this.goalAngle = Math.PI - this.goalAngle + (Math.random() - 0.5) * 0.2;
+        } else if (this.goalX > canvasWidth - birdWidth) {
+          this.goalX = 2 * (canvasWidth - birdWidth) - this.goalX;
+          this.goalAngle = Math.PI - this.goalAngle + (Math.random() - 0.5) * 0.2;
         }
-        if (this.y < 0 || this.y > 600 - birdHeight) {
-          this.angle = -this.angle;
-          this.y = Math.max(0, Math.min(600 - birdHeight, this.y));
+        if (this.goalY < 0) {
+          this.goalY = -this.goalY;
+          this.goalAngle = -this.goalAngle + (Math.random() - 0.5) * 0.2;
+        } else if (this.goalY > canvasHeight - birdHeight) {
+          this.goalY = 2 * (canvasHeight - birdHeight) - this.goalY;
+          this.goalAngle = -this.goalAngle + (Math.random() - 0.5) * 0.2;
         }
+        this.goalAngle = normalizeAngle(this.goalAngle);
       }
-    }
 
-    draw(ctx, frame) {
-      ctx.save();
-      ctx.translate(this.x + birdWidth / 2, this.y + birdHeight / 2);
-      ctx.rotate(this.isFalling ? this.fallRotation : this.angle);
-      ctx.imageSmoothingEnabled = true;
-      let img = this.isFalling
-        ? doveFallingImgs[frame]
-        : this.type === 'hawk' ? hawkImgs[frame] : doveImgs[frame];
-      if (!(img instanceof HTMLImageElement) || !img.complete || img.naturalWidth === 0) {
-        console.warn(`Invalid image for ${this.type} at frame ${frame}, src: ${img.src}, using placeholder`);
-        img = new Image();
-        img.src = defaultPlaceholder;
-      }
-      ctx.drawImage(img, -birdWidth / 2, -birdHeight / 2, birdWidth, birdHeight);
-      ctx.restore();
+      // Плавно перемещаем текущую позицию и угол к целевым
+      this.currentX = lerp(this.currentX, this.goalX, lerpFactor);
+      this.currentY = lerp(this.currentY, this.goalY, lerpFactor);
+      this.currentAngle = lerp(this.currentAngle, this.goalAngle, lerpFactor);
+      this.angle = this.currentAngle;
     }
   }
 
-  // Check collisions
+  // Проверка столкновений
   const checkCollisions = () => {
+    const doves = [...dovesRef.current];
     hawksRef.current.forEach(hawk => {
-      dovesRef.current.forEach(dove => {
+      doves.forEach(dove => {
         if (!dove.isFalling) {
-          const dx = hawk.x + birdWidth / 2 - (dove.x + birdWidth / 2);
-          const dy = hawk.y + birdHeight / 2 - (dove.y + birdHeight / 2);
+          const dx = hawk.currentX + birdWidth / 2 - (dove.currentX + birdWidth / 2);
+          const dy = hawk.currentY + birdHeight / 2 - (dove.currentY + birdHeight / 2);
           const distance = Math.hypot(dx, dy);
           if (distance < collisionRadius * 2) {
             dove.isFalling = true;
             dove.fallVelocity = 0;
-            dove.fallRotation = 0;
             dove.fadeTimer = 0;
+            dove.opacity = 1;
+            dove.fallAngle = dove.currentAngle;
+            console.log('Collision detected:', { hawkX: hawk.currentX, doveX: dove.currentX });
           }
         }
       });
     });
   };
 
-  // Initialize birds
+  // Инициализация птиц
   const initializeBirds = () => {
+    console.log('Инициализация птиц:', settings);
     hawksRef.current = [];
     dovesRef.current = [];
+    setHawkCount(settings.hawkCount);
+    setDoveCount(settings.doveCount);
+
     for (let i = 0; i < settings.hawkCount; i++) {
-      hawksRef.current.push(new Bird(
-        Math.random() * (800 - birdWidth),
-        Math.random() * (600 - birdHeight),
-        settings.speed,
-        'hawk'
-      ));
+      const x = Math.random() * (canvasWidth - birdWidth);
+      const y = Math.random() * (canvasHeight - birdHeight);
+      hawksRef.current.push(new Bird(x, y, settings.speed, 'hawk'));
     }
     for (let i = 0; i < settings.doveCount; i++) {
-      dovesRef.current.push(new Bird(
-        Math.random() * (800 - birdWidth),
-        Math.random() * (600 - birdHeight),
-        settings.speed,
-        'dove'
-      ));
+      const x = Math.random() * (canvasWidth - birdWidth);
+      const y = Math.random() * (canvasHeight - birdHeight);
+      dovesRef.current.push(new Bird(x, y, settings.speed, 'dove'));
     }
   };
 
-  // Animation loop
-  const animate = (ctx) => {
-    if (!isImagesLoaded || !isRunning) {
-      cancelAnimationFrame(animationIdRef.current);
+  // Цикл анимации
+  const animate = () => {
+    if (!isRunning || !canvasRef.current) {
+      animationRef.current && cancelAnimationFrame(animationRef.current);
       return;
     }
-    ctx.clearRect(0, 0, 800 * window.devicePixelRatio, 600 * window.devicePixelRatio);
-    frameCounterRef.current = (frameCounterRef.current + 1) % (framesPerSprite * 2);
+
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    frameCounterRef.current = (frameCounterRef.current + 1) % (framesPerSprite * 4);
     const currentFrame = Math.floor(frameCounterRef.current / framesPerSprite);
-    if (currentFrame < 0 || currentFrame >= 2) {
-      console.warn(`Invalid frame index: ${currentFrame}`);
-      return;
-    }
+
     checkCollisions();
-    [...hawksRef.current, ...dovesRef.current].forEach(bird => {
+
+    // Обновляем и рисуем птиц
+    const birds = [...hawksRef.current, ...dovesRef.current];
+    birds.forEach(bird => {
       bird.update();
-      bird.draw(ctx, currentFrame);
+      const img = bird.isFalling
+        ? doveFallingImg
+        : bird.type === 'hawk'
+        ? hawkImgs[currentFrame]
+        : doveImgs[currentFrame];
+
+      ctx.save();
+      ctx.globalAlpha = bird.opacity;
+      ctx.translate(bird.currentX + birdWidth / 2, bird.currentY + birdHeight / 2);
+      ctx.rotate(bird.isFalling ? bird.fallAngle : bird.currentAngle);
+      ctx.drawImage(img, -birdWidth / 2, -birdHeight / 2, birdWidth, birdHeight);
+      ctx.restore();
     });
-    animationIdRef.current = requestAnimationFrame(() => animate(ctx));
+
+    // Удаляем голубей, помеченные для удаления
+    const dovesToRemove = dovesRef.current.filter(dove => dove.remove);
+    if (dovesToRemove.length > 0) {
+      dovesRef.current = dovesRef.current.filter(dove => !dove.remove);
+      setDoveCount(prev => prev - dovesToRemove.length);
+      console.log('Removed doves:', dovesToRemove.length, 'New doveCount:', dovesRef.current.length);
+    }
+
+    animationRef.current = requestAnimationFrame(animate);
   };
 
+  // Синхронизация с настройками
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = 800 * dpr;
-    canvas.height = 600 * dpr;
-    ctx.scale(dpr, dpr);
+    setHawkCount(settings.hawkCount);
+    setDoveCount(settings.doveCount);
+    frameCounterRef.current = 0;
+    animationRef.current && cancelAnimationFrame(animationRef.current);
+    initializeBirds();
+  }, [settings]);
 
-    let imagesLoaded = 0;
-    const totalImages = hawkImgs.length + doveImgs.length + doveFallingImgs.length;
-    const loadedImages = new Set();
+  // Загрузка изображений
+  useEffect(() => {
+    const totalImages = hawkImgs.length + doveImgs.length + 1;
+    let loadedImages = 0;
 
-    const onImageLoad = (src) => {
-      if (!loadedImages.has(src)) {
-        loadedImages.add(src);
-        imagesLoaded++;
-        console.log(`Loaded image: ${src} (${imagesLoaded}/${totalImages})`);
-        if (imagesLoaded === totalImages) {
-          setIsImagesLoadedLocal(true);
-         /*  setIsImagesLoaded(); // Update parent state */
-          initializeBirds();
-        }
+    const onImageLoad = () => {
+      loadedImages++;
+      if (loadedImages === totalImages) {
+        setIsImagesLoaded(true);
+        initializeBirds();
       }
     };
 
-    const onImageError = (src) => {
-      if (!loadedImages.has(src)) {
-        console.error(`Failed to load image: ${src}`);
-        loadedImages.add(src);
-        imagesLoaded++;
-        hawkImgs.forEach(img => {
-          if (img.src.includes('hawk') && img.naturalWidth === 0) img.src = fallbackHawk;
-        });
-        doveImgs.forEach(img => {
-          if (img.src.includes('dove') && !img.src.includes('falling') && img.naturalWidth === 0) img.src = fallbackDove;
-        });
-        doveFallingImgs.forEach(img => {
-          if (img.src.includes('falling') && img.naturalWidth === 0) img.src = fallbackDoveFalling;
-        });
-        if (imagesLoaded === totalImages) {
-          setIsImagesLoadedLocal(true);
-          setIsImagesLoaded(true);
-          initializeBirds();
-        }
-      }
-    };
-
-    [...hawkImgs, ...doveImgs, ...doveFallingImgs].forEach(img => {
-      if (!img.src.startsWith('data:')) {
-        img.onload = () => onImageLoad(img.src);
-        img.onerror = () => onImageError(img.src);
-      } else {
-        onImageLoad(img.src);
-      }
+    [...hawkImgs, ...doveImgs, doveFallingImg].forEach(img => {
+      img.onload = onImageLoad;
     });
 
-    return () => cancelAnimationFrame(animationIdRef.current);
-  }, [settings, setIsImagesLoaded]);
+    return () => {
+      animationRef.current && cancelAnimationFrame(animationRef.current);
+      hawksRef.current = [];
+      dovesRef.current = [];
+    };
+  }, [setIsImagesLoaded]);
 
+  // Управление анимацией
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    console.log(`Animation state: isRunning=${isRunning}, isImagesLoaded=${isImagesLoaded}`);
-    if (isImagesLoaded && isRunning) {
-      console.log('Starting animation');
-      animate(ctx);
+    if (isRunning && canvasRef.current) {
+      animate();
     } else {
-      console.log('Stopping animation');
-      cancelAnimationFrame(animationIdRef.current);
+      animationRef.current && cancelAnimationFrame(animationRef.current);
     }
-    return () => cancelAnimationFrame(animationIdRef.current);
-  }, [isRunning, isImagesLoaded]);
+    return () => animationRef.current && cancelAnimationFrame(animationRef.current);
+  }, [isRunning]);
 
-
-
+  // Рендеринг
   return (
     <div className="canvas-container">
-      {!isImagesLoaded && <p>Загрузка изображений...</p>}
-      <canvas ref={canvasRef} className="simulation-canvas" />
+      <div className="bird-counter">
+        <div className="hawk"><p> <label htmlFor="">Голуби </label>{dovePercentage}%</p></div>
+        <div className="dove"><p><label>Ястребы </label>{hawkPercentage}%</p></div>
+      </div>
+      <canvas
+        ref={canvasRef}
+        width={canvasWidth}
+        height={canvasHeight}
+      />
     </div>
   );
 }
