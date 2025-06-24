@@ -19,8 +19,8 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
   const gravity = 0.08 // Гравитация для падения
   const fadeDelay = 60; // Задержка затухания (~1 секунда)
   const lerpFactor = 0.1; // Фактор плавности движения
-  const canvasWidth = 1422; // Ширина канваса
-  const canvasHeight = 519; // Высота канваса
+  const canvasWidth = 1280; // Ширина канваса
+  const canvasHeight =  465; // Высота канваса
 
   // Проценты для счетчика
   const { dovePercentage, hawkPercentage } = useMemo(() => {
