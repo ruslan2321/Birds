@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap");
 .canvas-container {
   display: flex;
   flex-direction: column;
@@ -6,33 +6,38 @@
   background-color: transparent;
 }
 
-.bird-counter{
-    display: flex;
-    align-items: center;
-    margin-top: 1rem;
-    background-color: #0093e3;
-    color: rgb(255, 255, 255);
-    border-radius: 10px;
+.bird-counter {
+  display: flex;
+  align-items: center;
+  width: 55rem;
+  gap: 1rem;
+  height: 3rem;
+  margin-top: 1rem;
+  background-color: #0093e3;
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  font-family: "Roboto", sans-serif;
+  border-radius: 10px;
+  box-shadow: 5px 4px 5px gray;
 }
-.hawk, .dove{
+.hawk,
+.dove {
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: 10px;
-  font-family: 'Roboto', sans-serif;
   width: 7rem;
   padding: 3px;
   height: 2rem;
   font-size: 14px;
 }
 
-
 .simulation-canvas {
   width: 1422px;
   height: 585px;
 }
 @media (max-width: 990px) {
-  .simulation-canvas{
+  .simulation-canvas {
     width: 36rem;
     height: 78rem;
   }

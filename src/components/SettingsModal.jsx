@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,13 +9,16 @@ import {
   IconButton,
   Typography,
   Box,
-} from '@mui/material';
+} from "@mui/material";
 /* import CloseIcon from '@mui/icons-material/Close'; */
 
 function SettingsModal({ settings, onSave, onClose, open }) {
   const [hawkCount, setHawkCount] = useState(settings.hawkCount);
   const [doveCount, setDoveCount] = useState(settings.doveCount);
   const [speed, setSpeed] = useState(settings.speed);
+  const [healHawk, setHealhawk] = useState(settings.heal_hawk);
+  const [healDove, setHealdove] = useState(settings.heal_dove);
+  const [rage, setRage] = useState(settings.rage);
 
   const validateInputs = () => {
     const hawkNum = parseInt(hawkCount, 10);
@@ -35,32 +38,46 @@ function SettingsModal({ settings, onSave, onClose, open }) {
   };
 
   const handleSubmit = () => {
-    console.log('SettingsModal: Applying settings', { hawkCount, doveCount, speed }); // Debug
-    if (typeof onSave !== 'function') {
-      console.error('onSave is not a function:', onSave);
+    console.log("SettingsModal: Applying settings", {
+      hawkCount,
+      doveCount,
+      speed,
+    }); // Debug
+    if (typeof onSave !== "function") {
+      console.error("onSave is not a function:", onSave);
       return;
     }
     if (!validateInputs()) {
-      console.warn('Invalid settings, aborting save');
-      alert('Пожалуйста, выберите корректные значения: количество птиц 0–20, скорость 0.1–5.');
+      console.warn("Invalid settings, aborting save");
+      alert(
+        "Пожалуйста, выберите корректные значения: количество птиц 0–20, скорость 0.1–5."
+      );
       return;
     }
     const newSettings = {
       hawkCount: parseInt(hawkCount, 10),
       doveCount: parseInt(doveCount, 10),
+      doveHeal: parseInt(healDove, 40),
+      hawkHeal: parseInt(healHawk, 40),
+      rage: parseFloat(rage),
       speed: parseFloat(speed),
     };
     onSave(newSettings);
     onClose();
   };
 
-  console.log('SettingsModal props:', { settings, onSave, onClose, open }); // Debug
+
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         Настройки симуляции
-        
       </DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>
@@ -88,7 +105,9 @@ function SettingsModal({ settings, onSave, onClose, open }) {
           />
         </Box>
         <Box sx={{ mt: 2 }}>
-          <Typography gutterBottom>Скорость (пикс/кадр): {speed.toFixed(1)}</Typography>
+          <Typography gutterBottom>
+            Скорость (пикс/кадр): {speed.toFixed(1)}
+          </Typography>
           <Slider
             value={parseFloat(speed)}
             onChange={(e, newValue) => setSpeed(newValue)}
@@ -97,6 +116,43 @@ function SettingsModal({ settings, onSave, onClose, open }) {
             step={0.1}
             valueLabelDisplay="auto"
             aria-label="Speed"
+          />
+        </Box>
+        {/*В разработке*/}
+        <Box>
+          <Typography>Кол-Во жизни голубя: {healDove}</Typography>
+          <Slider
+            value={parseFloat(healDove)}
+            onChange={(e, newValue) => setHealdove(newValue)}
+            min={1}
+            max={40}
+            step={1}
+            valueLabelDisplay="auto"
+            aria-label="heal"
+          />
+        </Box>
+        <Box>
+          <Typography>Кол-Во жизни ястреба: {healHawk}</Typography>
+          <Slider
+            value={parseFloat(healHawk)}
+            onChange={(e, newValue) => setHealhawk(newValue)}
+            min={1}
+            max={40}
+            step={1}
+            valueLabelDisplay="auto"
+            aria-label="heal"
+          />
+        </Box>
+        <Box>
+          <Typography>Уровень ярости ястреба: {rage}</Typography>
+          <Slider
+            value={parseFloat(rage)}
+            onChange={(e, newValue) => setRage(newValue)}
+            min={0.1}
+            max={1}
+            step={0.1}
+            valueLabelDisplay="auto"
+            aria-label="heal"
           />
         </Box>
       </DialogContent>

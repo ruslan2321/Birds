@@ -6,23 +6,21 @@ import SettingsModal from './components/SettingsModal';
 
 function App() {
   const [settings, setSettings] = useState({
-    hawkCount: 5,
+    hawkCount: 10,
     doveCount: 10,
     speed: 2,
+    heal_hawk: 40,
+    heal_dove: 40,
+    rage: 0.1,
   });
   const [isRunning, setIsRunning] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImagesLoaded, setIsImagesLoaded] = useState(false);
 
   const handleSaveSettings = (newSettings) => {
-    console.log('App: Saving new settings', newSettings); // Debug
     setSettings(newSettings);
     setIsModalOpen(false);
   };
-
-  console.log('App: Current settings', settings); // Debug
-  console.log('App: Passing onSave to SettingsModal'); // Debug
-
   return (
     <div className="app">
       <Header
