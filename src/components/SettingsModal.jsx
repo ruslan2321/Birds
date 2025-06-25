@@ -16,8 +16,9 @@ function SettingsModal({ settings, onSave, onClose, open }) {
   const [hawkCount, setHawkCount] = useState(settings.hawkCount);
   const [doveCount, setDoveCount] = useState(settings.doveCount);
   const [speed, setSpeed] = useState(settings.speed);
-  const [healHawk, setHealhawk] = useState(settings.heal_hawk);
-  const [healDove, setHealdove] = useState(settings.heal_dove);
+  const [healthDove, setHealthDove] = useState(settings.healthDove); // Новое состояние для здоровья
+  const [healthHawk, setHealtHawk] = useState(settings.healthHawk); // Новое состояние для здоровья
+
   const [rage, setRage] = useState(settings.rage);
 
   const validateInputs = () => {
@@ -38,17 +39,10 @@ function SettingsModal({ settings, onSave, onClose, open }) {
   };
 
   const handleSubmit = () => {
-    console.log("SettingsModal: Applying settings", {
-      hawkCount,
-      doveCount,
-      speed,
-    }); // Debug
     if (typeof onSave !== "function") {
-      console.error("onSave is not a function:", onSave);
       return;
     }
     if (!validateInputs()) {
-      console.warn("Invalid settings, aborting save");
       alert(
         "Пожалуйста, выберите корректные значения: количество птиц 0–20, скорость 0.1–5."
       );
@@ -57,8 +51,8 @@ function SettingsModal({ settings, onSave, onClose, open }) {
     const newSettings = {
       hawkCount: parseInt(hawkCount, 10),
       doveCount: parseInt(doveCount, 10),
-      doveHeal: parseInt(healDove, 40),
-      hawkHeal: parseInt(healHawk, 40),
+      healthDove: parseInt(healthDove, 40),
+      healthHawk: parseInt(healthHawk, 40),
       rage: parseFloat(rage),
       speed: parseFloat(speed),
     };
@@ -120,10 +114,10 @@ function SettingsModal({ settings, onSave, onClose, open }) {
         </Box>
         {/*В разработке*/}
         <Box>
-          <Typography>Кол-Во жизни голубя: {healDove}</Typography>
+          <Typography>Кол-Во жизни голубя: {healthDove}</Typography>
           <Slider
-            value={parseFloat(healDove)}
-            onChange={(e, newValue) => setHealdove(newValue)}
+            value={parseInt(healthDove)}
+            onChange={(e, newValue) => setHealthDove(newValue)}
             min={1}
             max={40}
             step={1}
@@ -132,10 +126,10 @@ function SettingsModal({ settings, onSave, onClose, open }) {
           />
         </Box>
         <Box>
-          <Typography>Кол-Во жизни ястреба: {healHawk}</Typography>
+          <Typography>Кол-Во жизни ястреба: {healthHawk}</Typography>
           <Slider
-            value={parseFloat(healHawk)}
-            onChange={(e, newValue) => setHealhawk(newValue)}
+            value={parseInt(healthHawk, 10)}
+            onChange={(e, newValue) => setHealtHawk(newValue)}
             min={1}
             max={40}
             step={1}

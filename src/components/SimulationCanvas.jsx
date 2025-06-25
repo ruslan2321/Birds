@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import "../styles/SimulationCanvas.css";
 
-function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
+function SimulationCanvas({ settings, isRunning, setIsImagesLoaded, }) {
   // Состояние и референсы
   const [hawkCount, setHawkCount] = useState(settings.hawkCount);
   const [doveCount, setDoveCount] = useState(settings.doveCount);
-  const [doveheal, setDoveheal] = useState(settings.doveHeal);
-  const [hawkheal, setHawkHeal] = useState(settings.hawkHeal);
+//state bird[]
+  const [healthDove, setHealthDove] = useState(100); 
+  const [healthHawk, setHealtHawk] = useState(100);
+
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const hawksRef = useRef([]);
@@ -14,9 +16,11 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
   const frameCounterRef = useRef(0);
 
   // Константы
+
   const birdWidth = 45; // Ширина птицы
   const birdHeight = 45; // Высота птицы
   const framesPerSprite = 10; // Кадров на спрайт
+  const time_life = 100;
   const collisionRadius = birdWidth / 2; // Радиус столкновений
   const gravity = 0.08; // Гравитация для падения
   const fadeDelay = 60; // Задержка затухания (~1 секунда)
@@ -63,6 +67,8 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
   };
 
   // Класс птицы
+
+
   class Bird {
     constructor(x, y, speed, type) {
       this.x = x; // Начальная позиция X
@@ -72,6 +78,8 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
       this.goalX = x; // Целевая позиция X
       this.goalY = y; // Целевая позиция Y
       this.speed = speed; // Скорость движения
+      this.heal_dove = healthDove; // жизни птиц
+      this.heal_hawk = healthHawk; // жизни птиц
       this.type = type; // Тип: 'hawk' или 'dove'
       this.angle = Math.random() * 2 * Math.PI; // Случайный начальный угол
       this.currentAngle = this.angle; // Текущий угол для отрисовки
@@ -84,6 +92,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
       this.fallAngle = 0; // Фиксированный угол при падении
       this.remove = false; // Флаг для удаления
     }
+    
 
     update() {
       if (this.isFalling) {
@@ -143,6 +152,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
       this.angle = this.currentAngle;
     }
   }
+  
 
   // Проверка столкновений
   const checkCollisions = () => {
@@ -156,20 +166,57 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
             hawk.currentY + birdHeight / 2 - (dove.currentY + birdHeight / 2);
           const distance = Math.hypot(dx, dy);
           if (distance < collisionRadius * 2) {
-            dove.isFalling = true;
-            dove.fallVelocity = 0;
-            dove.fadeTimer = 0;
-            dove.opacity = 1;
-            dove.fallAngle = dove.currentAngle;
+            dove.heal_dove -= 5;
+            doveImgs.img = new Image('')
+            console.log(`ХП Голубя: ${dove.heal_dove};%`  )
+            console.log(`ХП Ястреба: ${hawk.heal_hawk};%`  )
+           if(dove.heal_dove == 20){
+            
+          }
+            if(dove.heal_dove <= 0){
+              
+              dove.isFalling = true;
+              dove.fallVelocity = 0;
+              dove.fadeTimer = 0;
+              dove.opacity = 1;
+              dove.fallAngle = dove.currentAngle;
+            }
           }
         }
       });
     });
-  };
+   /*  dovesRef.current.forEach((dove) => {
+      doves.forEach((hawk) => {
+        if (!hawk.isFalling) {
+          const dx =
+            hawk.currentX + birdWidth / 2 - (hawk.currentX + birdWidth / 2);
+          const dy =
+            hawk.currentY + birdHeight / 2 - (hawk.currentY + birdHeight / 2);
+          const distance = Math.hypot(dx, dy);
+          if (distance < collisionRadius * 2) {
+            hawk.heal_hawk -= 20;
+            
+            console.log(`ХП Голубя: ${dove.heal_dove};`  )
+            console.log(`ХП Ястреба: ${hawk.heal_hawk};`  )
+           if(dove.heal_hawk == 20){
 
+          }
+            if(dove.heal_hawk <= 0){
+              
+              hawk.isFalling = true;
+              hawk.fallVelocity = 0;
+              hawk.fadeTimer = 0;
+              hawk.opacity = 1;
+              hawk.fallAngle = hawk.currentAngle;
+            }
+          }
+        }
+      });
+    }); */
+  };
   // Инициализация птиц
   const initializeBirds = () => {
-    console.log("Инициализация птиц:", settings);
+    
     hawksRef.current = [];
     dovesRef.current = [];
     setHawkCount(settings.hawkCount);
@@ -235,12 +282,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
     if (dovesToRemove.length > 0) {
       dovesRef.current = dovesRef.current.filter((dove) => !dove.remove);
       setDoveCount((prev) => prev - dovesToRemove.length);
-      console.log(
-        "Removed doves:",
-        dovesToRemove.length,
-        "New doveCount:",
-        dovesRef.current.length
-      );
+      
     }
 
     animationRef.current = requestAnimationFrame(animate);
@@ -250,6 +292,9 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
   useEffect(() => {
     setHawkCount(settings.hawkCount);
     setDoveCount(settings.doveCount);
+
+/*     setHealtHawk(settings.healHawk);
+    setDoveCount(settings.healDove); */
     frameCounterRef.current = 0;
     animationRef.current && cancelAnimationFrame(animationRef.current);
     initializeBirds();
@@ -296,7 +341,6 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
       <div className="bird-counter">
         <div className="hawk">
           <p>
-            {" "}
             <label htmlFor="">Голуби </label>
             {dovePercentage}%
           </p>
