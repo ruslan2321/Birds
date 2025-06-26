@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
-import "../styles/SimulationCanvas.css";
+import "../styles/SimulationCanvas.scss";
 
 function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
   // Состояния
@@ -42,8 +42,8 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
     return {
       dovePercentage: total > 0 ? ((doveCount / total) * 100).toFixed(0) : 0,
       hawkPercentage: total > 0 ? ((hawkCount / total) * 100).toFixed(0) : 0,
-      deadHawksOldAgePercentage: initialHawkCount > 0 ? ((deadHawksOldAge / initialHawkCount) * 100).toFixed(1) : 0,
-      deadDovesOldAgePercentage: initialDoveCount > 0 ? ((deadDovesOldAge / initialDoveCount) * 100).toFixed(1) : 0,
+      deadHawksOldAgePercentage: initialHawkCount > 0 ? ((deadHawksOldAge / initialHawkCount) * 100).toFixed(0) : 0,
+      deadDovesOldAgePercentage: initialDoveCount > 0 ? ((deadDovesOldAge / initialDoveCount) * 100).toFixed(0) : 0,
     };
   }, [hawkCount, doveCount, deadHawksOldAge, deadDovesOldAge, initialHawkCount, initialDoveCount]);
 
