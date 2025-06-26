@@ -1,382 +1,437 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import "../styles/SimulationCanvas.css";
 
-// Компонент для симуляции движения птиц (ястребов и голубей) на канвасе
 function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
-  // Состояния для отслеживания количества птиц и смертей от старости
-  const [hawkCount, setHawkCount] = useState(settings.hawkCount); // Количество ястребов
-  const [doveCount, setDoveCount] = useState(settings.doveCount); // Количество голубей
-  const [deadHawksOldAge, setDeadHawksOldAge] = useState(0); // Счетчик ястребов, погибших от старости
-  const [deadDovesOldAge, setDeadDovesOldAge] = useState(0); // Счетчик голубей, погибших от старости
+  // Состояния
+  const [hawkCount, setHawkCount] = useState(0);
+  const [doveCount, setDoveCount] = useState(0);
+  const [deadHawksOldAge, setDeadHawksOldAge] = useState(0);
+  const [deadDovesOldAge, setDeadDovesOldAge] = useState(0);
+  const [initialHawkCount, setInitialHawkCount] = useState(0);
+  const [initialDoveCount, setInitialDoveCount] = useState(0);
 
-  // Референсы для хранения канваса, анимации и массивов птиц
-  const canvasRef = useRef(null); // Референс на элемент canvas
-  const animationRef = useRef(null); // Референс для requestAnimationFrame
-  const hawksRef = useRef([]); // Массив ястребов
-  const dovesRef = useRef([]); // Массив голубей
-  const frameCounterRef = useRef(0); // Счетчик кадров для анимации спрайтов
+  // Референсы
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const hawksRef = useRef([]);
+  const dovesRef = useRef([]);
+  const frameCounterRef = useRef(0);
 
-  // Константы для настроек симуляции
-  const birdWidth = 45; // Ширина спрайта птицы
-  const birdHeight = 45; // Высота спрайта птицы
-  const framesPerSprite = 10; // Количество кадров на один спрайт
-  const timeLife = 100; // Продолжительность жизни птицы в кадрах (~1.67 сек при 60 FPS)
-  const collisionRadius = birdWidth / 2; // Радиус для проверки столкновений
-  const gravity = 0.08; // Гравитация для падения птиц
-  const fadeDelay = 60; // Задержка затухания (в кадрах) перед удалением
-  const lerpFactor = 0.1; // Фактор плавности движения (линейная интерполяция)
-  const canvasWidth = 1280; // Ширина канваса
-  const canvasHeight = 450; // Высота канваса
+  // Константы
+  const BIRD_WIDTH = 45;
+  const BIRD_HEIGHT = 45;
+  const FRAMES_PER_SPRITE = 10;
+  const TIME_LIFE = Number(settings.lifeSpan) || 6000;
+  const COLLISION_RADIUS = BIRD_WIDTH / 2;
+  const GRAVITY = 0.08;
+  const FADE_DELAY = 60;
+  const LERP_FACTOR = 0.1;
+  const CANVAS_WIDTH = 1280;
+  const CANVAS_HEIGHT = 450;
+  const RAGE_THRESHOLD = Number(settings.rageThreshold) || 0.5;
+  const RAGE_DURATION = Number(settings.rageDuration) || 300;
+  const RAGE_DAMAGE_MULTIPLIER = 1.5;
+  const RAGE_SPEED_MULTIPLIER = 1.3;
+  const DOVE_DAMAGE = Number(settings.doveDamage) || 2;
+  const HAWK_DOVE_DAMAGE = 5;
+  const HAWK_HAWK_DAMAGE = 5;
 
-  // Вычисление процентов голубей и ястребов
-  const { dovePercentage, hawkPercentage } = useMemo(() => {
-    const totalBirds = hawkCount + doveCount;
-    const dovePercentage = totalBirds > 0 ? ((doveCount / totalBirds) * 100).toFixed(0) : 0; // Процент голубей
-    const hawkPercentage = totalBirds > 0 ? ((hawkCount / totalBirds) * 100).toFixed(0) : 0; // Процент ястребов
-    return { dovePercentage, hawkPercentage };
-  }, [hawkCount, doveCount]);
+  // Проценты голубей, ястребов и смертей от старости
+  const { dovePercentage, hawkPercentage, deadHawksOldAgePercentage, deadDovesOldAgePercentage } = useMemo(() => {
+    const total = hawkCount + doveCount;
+    return {
+      dovePercentage: total > 0 ? ((doveCount / total) * 100).toFixed(0) : 0,
+      hawkPercentage: total > 0 ? ((hawkCount / total) * 100).toFixed(0) : 0,
+      deadHawksOldAgePercentage: initialHawkCount > 0 ? ((deadHawksOldAge / initialHawkCount) * 100).toFixed(1) : 0,
+      deadDovesOldAgePercentage: initialDoveCount > 0 ? ((deadDovesOldAge / initialDoveCount) * 100).toFixed(1) : 0,
+    };
+  }, [hawkCount, doveCount, deadHawksOldAge, deadDovesOldAge, initialHawkCount, initialDoveCount]);
 
-  // Загрузка спрайтов для ястребов и голубей
-  const hawkImgs = Array(4)
-    .fill()
-    .map((_, i) => {
-      const img = new Image();
-      img.src = `/image/hawk-sprait${i + 1}.png`; // Спрайты ястреба
-      return img;
-    });
-  const doveImgs = Array(4)
-    .fill()
-    .map((_, i) => {
-      const img = new Image();
-      img.src = `/image/dove-sprait${i + 1}.png`; // Спрайты голубя
-      return img;
-    });
-  const doveFallingImg = new Image();
-  doveFallingImg.src = "/image/dove_falling4.png"; // Спрайт падающего голубя
+  // Изображения
+  const images = useMemo(() => ({
+    hawkImgs: Array(4).fill().map((_, i) => Object.assign(new Image(), { src: `/image/hawk-sprait${i + 1}.png` })),
+    doveImgs: Array(4).fill().map((_, i) => Object.assign(new Image(), { src: `/image/dove-sprait${i + 1}.png` })),
+    doveFallingImg: Object.assign(new Image(), { src: "/image/dove_falling4.png" }),
+    hawkFallingImg: Object.assign(new Image(), { src: "/image/hawk_falling.png" }),
+    fallbackImg: Object.assign(new Image(), { src: "/image/fallback.png" }),
+  }), []);
 
-  // Функция линейной интерполяции для плавного движения
   const lerp = (start, end, t) => start + (end - start) * t;
 
-  // Нормализация угла (приведение к диапазону [-π, π])
   const normalizeAngle = (angle) => {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
     return angle;
   };
 
-  // Класс для представления птицы (ястреба или голубя)
   class Bird {
     constructor(x, y, speed, type) {
-      this.x = x; // Начальная позиция X
-      this.y = y; // Начальная позиция Y
-      this.currentX = x; // Текущая позиция X для отрисовки
-      this.currentY = y; // Текущая позиция Y для отрисовки
-      this.goalX = x; // Целевая позиция X
-      this.goalY = y; // Целевая позиция Y
-      this.speed = speed; // Скорость движения
-      this.health = 100; // Здоровье птицы (100% по умолчанию)
-      this.type = type; // Тип птицы: 'hawk' или 'dove'
-      this.angle = Math.random() * 2 * Math.PI; // Случайный начальный угол
-      this.currentAngle = this.angle; // Текущий угол для отрисовки
-      this.goalAngle = this.angle; // Целевой угол направления
-      this.changeDirectionTimer = 0; // Таймер смены направления
-      this.isFalling = false; // Флаг: падает ли птица
-      this.fallVelocity = 0; // Скорость падения
-      this.fadeTimer = 0; // Таймер затухания
-      this.opacity = 1; // Прозрачность спрайта
-      this.fallAngle = 0; // Угол при падении
-      this.remove = false; // Флаг для удаления птицы
-      this.age = 0; // Возраст птицы (в кадрах)
+      this.x = x;
+      this.y = y;
+      this.currentX = x;
+      this.currentY = y;
+      this.goalX = x;
+      this.goalY = y;
+      this.baseSpeed = speed;
+      this.speed = speed;
+      this.health = type === "hawk" ? Number(settings.healthHawk) || 100 : Number(settings.healthDove) || 100;
+      this.type = type;
+      this.angle = Math.random() * 2 * Math.PI;
+      this.currentAngle = this.angle;
+      this.goalAngle = this.angle;
+      this.changeDirectionTimer = 0;
+      this.isFalling = false;
+      this.fallVelocity = 0;
+      this.fadeTimer = 0;
+      this.opacity = 1;
+      this.fallAngle = 0;
+      this.remove = false;
+      this.age = 0;
+      this.rage = 0;
+      this.rageTimer = 0;
+      this.isEnraged = false;
+      this.healthBarFade = 1; // Для анимации полоски здоровья
     }
 
-    // Обновление состояния птицы
     update() {
       if (this.isFalling) {
-        // Логика для падающей птицы
-        this.fallVelocity += gravity; // Увеличиваем скорость падения
-        this.goalY += this.fallVelocity; // Двигаем вниз
-        if (this.goalY >= canvasHeight - birdHeight) {
-          this.goalY = canvasHeight - birdHeight; // Ограничение по нижней границе
-          this.fallVelocity = 0; // Остановка падения
-          this.fadeTimer++; // Увеличиваем таймер затухания
-          if (this.fadeTimer >= fadeDelay) {
-            this.remove = true; // Помечаем для удаления
+        this.fallVelocity += GRAVITY;
+        this.goalY += this.fallVelocity;
+        if (this.goalY >= CANVAS_HEIGHT - BIRD_HEIGHT) {
+          this.goalY = CANVAS_HEIGHT - BIRD_HEIGHT;
+          this.fallVelocity = 0;
+          this.fadeTimer++;
+          if (this.fadeTimer >= FADE_DELAY) {
+            this.remove = true;
             return;
           }
-          if (this.fadeTimer >= 1) {
-            this.opacity = 1 - this.fadeTimer / fadeDelay; // Постепенное затухание
-          }
+          this.opacity = 1 - this.fadeTimer / FADE_DELAY;
         }
       } else {
-        // Логика старения
-        this.age++; // Увеличиваем возраст
-        if (this.age >= timeLife) {
-          // Если птица достигла максимального возраста
+        this.age++;
+        if (this.age >= TIME_LIFE) {
           this.isFalling = true;
           this.fallVelocity = 0;
           this.fadeTimer = 0;
           this.opacity = 1;
           this.fallAngle = this.currentAngle;
-          this.remove = true; // Помечаем для удаления после затухания
           return;
         }
 
-        // Логика движения летающей птицы
-        this.changeDirectionTimer++; // Таймер смены направления
+        if (this.type === "hawk" && this.isEnraged) {
+          this.rageTimer++;
+          if (this.rageTimer >= RAGE_DURATION) {
+            this.isEnraged = false;
+            this.rage = 0;
+            this.rageTimer = 0;
+            this.speed = this.baseSpeed;
+          }
+        }
+
+        this.changeDirectionTimer++;
         if (this.changeDirectionTimer > Math.random() * 30 + 30) {
-          // Случайная смена направления
           this.goalAngle = normalizeAngle(this.goalAngle + (Math.random() - 0.5) * Math.PI);
           this.changeDirectionTimer = 0;
         }
 
-        // Обновление целевой позиции
         this.goalX += Math.cos(this.goalAngle) * this.speed;
         this.goalY += Math.sin(this.goalAngle) * this.speed;
 
-        // Ограничение движения внутри канваса с отражением
         if (this.goalX < 0) {
           this.goalX = -this.goalX;
           this.goalAngle = Math.PI - this.goalAngle + (Math.random() - 0.5) * 0.2;
-        } else if (this.goalX > canvasWidth - birdWidth) {
-          this.goalX = 2 * (canvasWidth - birdWidth) - this.goalX;
+        } else if (this.goalX > CANVAS_WIDTH - BIRD_WIDTH) {
+          this.goalX = 2 * (CANVAS_WIDTH - BIRD_WIDTH) - this.goalX;
           this.goalAngle = Math.PI - this.goalAngle + (Math.random() - 0.5) * 0.2;
         }
         if (this.goalY < 0) {
           this.goalY = -this.goalY;
           this.goalAngle = -this.goalAngle + (Math.random() - 0.5) * 0.2;
-        } else if (this.goalY > canvasHeight - birdHeight) {
-          this.goalY = 2 * (canvasHeight - birdHeight) - this.goalY;
+        } else if (this.goalY > CANVAS_HEIGHT - BIRD_HEIGHT) {
+          this.goalY = 2 * (CANVAS_HEIGHT - BIRD_HEIGHT) - this.goalY;
           this.goalAngle = -this.goalAngle + (Math.random() - 0.5) * 0.2;
         }
-        this.goalAngle = normalizeAngle(this.goalAngle); // Нормализация угла
+        this.goalAngle = normalizeAngle(this.goalAngle);
       }
 
-      // Плавное перемещение к целевой позиции и углу
-      this.currentX = lerp(this.currentX, this.goalX, lerpFactor);
-      this.currentY = lerp(this.currentY, this.goalY, lerpFactor);
-      this.currentAngle = lerp(this.currentAngle, this.goalAngle, lerpFactor);
+      this.currentX = lerp(this.currentX, this.goalX, LERP_FACTOR);
+      this.currentY = lerp(this.currentY, this.goalY, LERP_FACTOR);
+      this.currentAngle = lerp(this.currentAngle, this.goalAngle, LERP_FACTOR);
       this.angle = this.currentAngle;
+      this.healthBarFade = lerp(this.healthBarFade, this.health / 100, 0.2); // Плавная анимация полоски здоровья
     }
   }
 
-  // Проверка столкновений между птицами
   const checkCollisions = () => {
     const hawks = hawksRef.current;
     const doves = dovesRef.current;
 
-    // Столкновения ястреб-голубь
-    hawks.forEach((hawk, hawkIndex) => {
-      doves.forEach((dove, doveIndex) => {
-        if (!dove.isFalling && !hawk.isFalling) {
-          const dx = hawk.currentX + birdWidth / 2 - (dove.currentX + birdWidth / 2);
-          const dy = hawk.currentY + birdHeight / 2 - (dove.currentY + birdHeight / 2);
-          const distance = Math.hypot(dx, dy); // Расстояние между центрами птиц
-          if (distance < collisionRadius * 2) {
-            dove.health -= 5; // Голубь теряет 5% здоровья
-            console.log(`Голубь ${doveIndex} ХП: ${dove.health}%`);
-            console.log(`Ястреб ${hawkIndex} ХП: ${hawk.health}%`);
-            if (dove.health <= 20) {
-              // Можно добавить изменение поведения при низком здоровье
-               dove.speed *= 0.8; 
-            }
-            if (dove.health <= 0) {
-              // Голубь погибает и начинает падать
-              dove.isFalling = true;
-              dove.fallVelocity = 0;
-              dove.fadeTimer = 0;
-              dove.opacity = 1;
-              dove.fallAngle = dove.currentAngle;
-            }
+    const checkPairCollision = (bird1, bird2, damage, isHawkHawk = false, isDoveDove = false) => {
+      if (!bird1.isFalling && !bird2.isFalling) {
+        const dx = bird1.currentX + BIRD_WIDTH / 2 - (bird2.currentX + BIRD_WIDTH / 2);
+        const dy = bird1.currentY + BIRD_HEIGHT / 2 - (bird2.currentY + BIRD_HEIGHT / 2);
+        const distance = Math.hypot(dx, dy);
+        if (distance < COLLISION_RADIUS * 2) {
+          const appliedDamage = (bird1.isEnraged || bird2.isEnraged) && !isDoveDove ? damage * RAGE_DAMAGE_MULTIPLIER : damage;
+          bird1.health -= appliedDamage;
+          if (!isDoveDove) bird2.health -= appliedDamage;
+
+          if (bird1.type === "hawk") bird1.rage = Math.min(bird1.rage + 0.1, 1);
+          if (bird2.type === "hawk") bird2.rage = Math.min(bird2.rage + 0.1, 1);
+
+          if (bird1.type === "hawk" && bird1.rage >= RAGE_THRESHOLD && !bird1.isEnraged) {
+            bird1.isEnraged = true;
+            bird1.rageTimer = 0;
+            bird1.speed = bird1.baseSpeed * RAGE_SPEED_MULTIPLIER;
+          }
+          if (bird2.type === "hawk" && bird2.rage >= RAGE_THRESHOLD && !bird2.isEnraged) {
+            bird2.isEnraged = true;
+            bird2.rageTimer = 0;
+            bird2.speed = bird2.baseSpeed * RAGE_SPEED_MULTIPLIER;
+          }
+
+          if (bird1.health <= 0) {
+            bird1.isFalling = true;
+            bird1.fallVelocity = 0;
+            bird1.fadeTimer = 0;
+            bird1.opacity = 1;
+            bird1.fallAngle = bird1.currentAngle;
+          }
+          if (bird2.health <= 0 && !isDoveDove) {
+            bird2.isFalling = true;
+            bird2.fallVelocity = 0;
+            bird2.fadeTimer = 0;
+            bird2.opacity = 1;
+            bird2.fallAngle = bird2.currentAngle;
           }
         }
-      });
-    });
+      }
+    };
 
-    // Столкновения ястреб-ястреб
+    for (let i = 0; i < hawks.length; i++) {
+      for (let j = 0; j < doves.length; j++) {
+        checkPairCollision(hawks[i], doves[j], HAWK_DOVE_DAMAGE);
+      }
+    }
+
     for (let i = 0; i < hawks.length; i++) {
       for (let j = i + 1; j < hawks.length; j++) {
-        const hawk1 = hawks[i];
-        const hawk2 = hawks[j];
-        if (!hawk1.isFalling && !hawk2.isFalling) {
-          const dx = hawk1.currentX + birdWidth / 2 - (hawk2.currentX + birdWidth / 2);
-          const dy = hawk1.currentY + birdHeight / 2 - (hawk2.currentY + birdHeight / 2);
-          const distance = Math.hypot(dx, dy);
-          if (distance < collisionRadius * 2) {
-            hawk1.health -= 5; // Ястребы теряют 10% здоровья
-            hawk2.health -= 5;
-            console.log(`Ястреб ${i} ХП: ${hawk1.health}%`);
-            console.log(`Ястреб ${j} ХП: ${hawk2.health}%`);
-            if (hawk1.health <= 0) {
-              hawk1.isFalling = true;
-              hawk1.fallVelocity = 0;
-              hawk1.fadeTimer = 0;
-              hawk1.opacity = 1;
-              hawk1.fallAngle = hawk1.currentAngle;
-            }
-            if (hawk2.health <= 0) {
-              hawk2.isFalling = true;
-              hawk2.fallVelocity = 0;
-              hawk2.fadeTimer = 0;
-              hawk2.opacity = 1;
-              hawk2.fallAngle = hawk2.currentAngle;
-            }
-          }
-        }
+        checkPairCollision(hawks[i], hawks[j], HAWK_HAWK_DAMAGE, true);
+      }
+    }
+
+    for (let i = 0; i < doves.length; i++) {
+      for (let j = i + 1; j < doves.length; j++) {
+        checkPairCollision(doves[i], doves[j], DOVE_DAMAGE, false, true);
       }
     }
   };
 
-  // Инициализация птиц
   const initializeBirds = () => {
     hawksRef.current = [];
     dovesRef.current = [];
-    setHawkCount(settings.hawkCount); // Обновление количества ястребов
-    setDoveCount(settings.doveCount); // Обновление количества голубей
+    const hawkCount = Math.max(0, Math.floor(Number(settings.hawkCount) || 0));
+    const doveCount = Math.max(0, Math.floor(Number(settings.doveCount) || 0));
+    setHawkCount(hawkCount);
+    setDoveCount(doveCount);
+    setInitialHawkCount(hawkCount);
+    setInitialDoveCount(doveCount);
+    setDeadHawksOldAge(0);
+    setDeadDovesOldAge(0);
 
-    // Создание ястребов
-    for (let i = 0; i < settings.hawkCount; i++) {
-      const x = Math.random() * (canvasWidth - birdWidth); // Случайная позиция X
-      const y = Math.random() * (canvasHeight - birdHeight); // Случайная позиция Y
-      hawksRef.current.push(new Bird(x, y, settings.speed, "hawk"));
+    for (let i = 0; i < hawkCount; i++) {
+      const x = Math.random() * (CANVAS_WIDTH - BIRD_WIDTH);
+      const y = Math.random() * (CANVAS_HEIGHT - BIRD_HEIGHT);
+      hawksRef.current.push(new Bird(x, y, Number(settings.speed) || 2, "hawk"));
     }
-    // Создание голубей
-    for (let i = 0; i < settings.doveCount; i++) {
-      const x = Math.random() * (canvasWidth - birdWidth);
-      const y = Math.random() * (canvasHeight - birdHeight);
-      dovesRef.current.push(new Bird(x, y, settings.speed, "dove"));
+    for (let i = 0; i < doveCount; i++) {
+      const x = Math.random() * (CANVAS_WIDTH - BIRD_WIDTH);
+      const y = Math.random() * (CANVAS_HEIGHT - BIRD_HEIGHT);
+      dovesRef.current.push(new Bird(x, y, Number(settings.speed) || 2, "dove"));
     }
   };
 
-  // Цикл анимации
+  const isImageLoaded = (img) => img.complete && img.naturalWidth !== 0;
+
   const animate = () => {
     if (!isRunning || !canvasRef.current) {
-      animationRef.current && cancelAnimationFrame(animationRef.current); // Остановка анимации
+      animationRef.current && cancelAnimationFrame(animationRef.current);
       return;
     }
 
     const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return; // Проверка наличия контекста
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Очистка канваса
+    if (!ctx) return;
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    frameCounterRef.current = (frameCounterRef.current + 1) % (framesPerSprite * 4); // Цикл кадров спрайта
-    const currentFrame = Math.floor(frameCounterRef.current / framesPerSprite); // Текущий кадр анимации
+    frameCounterRef.current = (frameCounterRef.current + 1) % (FRAMES_PER_SPRITE * 4);
+    const currentFrame = Math.floor(frameCounterRef.current / FRAMES_PER_SPRITE);
 
-    checkCollisions(); // Проверка столкновений
+    checkCollisions();
 
-    // Обновление и отрисовка всех птиц
     const birds = [...hawksRef.current, ...dovesRef.current];
     birds.forEach((bird) => {
-      bird.update(); // Обновление состояния птицы
+      bird.update();
+
       const img = bird.isFalling
-        ? doveFallingImg // Спрайт для падающей птицы
+        ? bird.type === "hawk"
+          ? images.hawkFallingImg
+          : images.doveFallingImg
         : bird.type === "hawk"
-        ? hawkImgs[currentFrame] // Спрайт ястреба
-        : doveImgs[currentFrame]; // Спрайт голубя
+        ? images.hawkImgs[currentFrame]
+        : images.doveImgs[currentFrame];
 
       ctx.save();
-      ctx.globalAlpha = bird.opacity; // Установка прозрачности
-      ctx.translate(bird.currentX + birdWidth / 2, bird.currentY + birdHeight / 2); // Перемещение в центр птицы
-      ctx.rotate(bird.isFalling ? bird.fallAngle : bird.currentAngle); // Поворот спрайта
-      ctx.drawImage(img, -birdWidth / 2, -birdHeight / 2, birdWidth, birdHeight); // Отрисовка спрайта
+      ctx.globalAlpha = bird.opacity;
+
+      if (!bird.isFalling) {
+        const healthBarWidth = BIRD_WIDTH * 0.9;
+        const healthBarHeight = 8;
+        const healthBarX = bird.currentX + (BIRD_WIDTH - healthBarWidth) / 2;
+        const healthBarY = bird.currentY - 15;
+
+        // Градиент для полоски здоровья
+        const gradient = ctx.createLinearGradient(healthBarX, healthBarY, healthBarX + healthBarWidth, healthBarY);
+        gradient.addColorStop(0, bird.health > 60 ? "#00ff00" : bird.health > 20 ? "#ffff00" : "#ff0000");
+        gradient.addColorStop(1, bird.health > 60 ? "#00cc00" : bird.health > 20 ? "#cccc00" : "#cc0000");
+
+        // Тень для полоски
+        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+
+        // Фон полоски
+        ctx.fillStyle = "#333";
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+        // Полоска здоровья с анимацией
+        ctx.fillStyle = gradient;
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth * bird.healthBarFade, healthBarHeight);
+
+        // Рамка
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+      }
+
+      ctx.translate(bird.currentX + BIRD_WIDTH / 2, bird.currentY + BIRD_HEIGHT / 2);
+      ctx.rotate(bird.isFalling ? bird.fallAngle : bird.currentAngle);
+      ctx.drawImage(
+        isImageLoaded(img) ? img : isImageLoaded(images.fallbackImg) ? images.fallbackImg : images.doveImgs[0],
+        -BIRD_WIDTH / 2,
+        -BIRD_HEIGHT / 2,
+        BIRD_WIDTH,
+        BIRD_HEIGHT
+      );
+
+      if (bird.type === "hawk" && bird.isEnraged) {
+        // Пульсирующий эффект ярости
+        const pulse = 1 + 0.1 * Math.sin(frameCounterRef.current * 0.1);
+        ctx.globalAlpha = bird.opacity * 0.6;
+        ctx.strokeStyle = "#ff0000";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, (BIRD_WIDTH / 1.5) * pulse, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Свечение
+        ctx.globalAlpha = bird.opacity * 0.3;
+        ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+        ctx.beginPath();
+        ctx.arc(0, 0, (BIRD_WIDTH / 1.2) * pulse, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+
       ctx.restore();
+      ctx.shadowBlur = 0; // Сброс тени
     });
 
-    // Удаление погибших птиц и обновление счетчиков
     const dovesToRemove = dovesRef.current.filter((dove) => dove.remove);
     const hawksToRemove = hawksRef.current.filter((hawk) => hawk.remove);
     if (dovesToRemove.length > 0) {
-      dovesRef.current = dovesRef.current.filter((dove) => !dove.remove); // Удаление голубей
-      setDoveCount((prev) => prev - dovesToRemove.length); // Обновление счетчика голубей
-      setDeadDovesOldAge((prev) =>
-        prev + dovesToRemove.filter((dove) => dove.age >= timeLife).length // Счетчик смертей от старости
-      );
+      dovesRef.current = dovesRef.current.filter((dove) => !dove.remove);
+      setDoveCount((prev) => prev - dovesToRemove.length);
+      setDeadDovesOldAge((prev) => prev + dovesToRemove.filter((dove) => dove.age >= TIME_LIFE).length);
     }
     if (hawksToRemove.length > 0) {
-      hawksRef.current = hawksRef.current.filter((hawk) => !hawk.remove); // Удаление ястребов
-      setHawkCount((prev) => prev - hawksToRemove.length); // Обновление счетчика ястребов
-      setDeadHawksOldAge((prev) =>
-        prev + hawksToRemove.filter((hawk) => hawk.age >= timeLife).length // Счетчик смертей от старости
-      );
+      hawksRef.current = hawksRef.current.filter((hawk) => !hawk.remove);
+      setHawkCount((prev) => prev - hawksToRemove.length);
+      setDeadHawksOldAge((prev) => prev + hawksToRemove.filter((hawk) => hawk.age >= TIME_LIFE).length);
     }
 
-    animationRef.current = requestAnimationFrame(animate); // Запуск следующего кадра
+    animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Синхронизация с настройками
   useEffect(() => {
-    setHawkCount(settings.hawkCount); // Обновление количества ястребов
-    setDoveCount(settings.doveCount); // Обновление количества голубей
-    frameCounterRef.current = 0; // Сброс счетчика кадров
-    animationRef.current && cancelAnimationFrame(animationRef.current); // Остановка текущей анимации
-    initializeBirds(); // Инициализация птиц
+    initializeBirds();
   }, [settings]);
 
-  // Загрузка изображений
   useEffect(() => {
-    const totalImages = hawkImgs.length + doveImgs.length + 1; // Общее количество изображений
-    let loadedImages = 0; // Счетчик загруженных изображений
+    const totalImages = images.hawkImgs.length + images.doveImgs.length + 2;
+    let loadedImages = 0;
 
-    const onImageLoad = () => {
+    const onImageLoadOrError = () => {
       loadedImages++;
       if (loadedImages === totalImages) {
-        setIsImagesLoaded(true); // Установка флага загрузки изображений
-        initializeBirds(); // Инициализация птиц после загрузки
+        setIsImagesLoaded(true);
+        initializeBirds();
       }
     };
 
-    [...hawkImgs, ...doveImgs, doveFallingImg].forEach((img) => {
-      img.onload = onImageLoad; // Обработчик загрузки изображений
-      img.onerror = () => console.error(`Ошибка загрузки изображения: ${img.src}`); // Обработка ошибок
+    [...images.hawkImgs, ...images.doveImgs, images.doveFallingImg, images.hawkFallingImg].forEach((img) => {
+      img.onload = onImageLoadOrError;
+      img.onerror = () => {
+        console.error(`Ошибка загрузки изображения: ${img.src}`);
+        onImageLoadOrError();
+      };
     });
 
-    // Очистка при размонтировании компонента
     return () => {
       animationRef.current && cancelAnimationFrame(animationRef.current);
       hawksRef.current = [];
       dovesRef.current = [];
     };
-  }, [setIsImagesLoaded]);
+  }, [images, setIsImagesLoaded]);
 
-  // Управление анимацией
   useEffect(() => {
     if (isRunning && canvasRef.current) {
-      animate(); // Запуск анимации
+      animate();
     } else {
-      animationRef.current && cancelAnimationFrame(animationRef.current); // Остановка анимации
+      animationRef.current && cancelAnimationFrame(animationRef.current);
     }
-    return () => animationRef.current && cancelAnimationFrame(animationRef.current); // Очистка
+    return () => animationRef.current && cancelAnimationFrame(animationRef.current);
   }, [isRunning]);
 
-  // Рендеринг компонента
   return (
     <div className="canvas-container">
       <div className="bird-counter">
         <div className="hawk">
           <p>
-            <label>Голуби </label>
-            {dovePercentage}% {/* Процент голубей */}
+            <label>Голуби: </label>
+            {dovePercentage}% 
           </p>
         </div>
         <div className="dove">
           <p>
-            <label>Ястребы </label>
-            {hawkPercentage}% {/* Процент ястребов */}
+            <label>Ястребы: </label>
+            {hawkPercentage}%
           </p>
         </div>
         <div className="dead-hawks">
           <p>
             <label>Погибло ястребов от старости: </label>
-            {deadHawksOldAge} {/* Счетчик ястребов, погибших от старости */}
+            {deadHawksOldAgePercentage}%
           </p>
         </div>
         <div className="dead-doves">
           <p>
             <label>Погибло голубей от старости: </label>
-            {deadDovesOldAge} {/* Счетчик голубей, погибших от старости */}
+            {deadDovesOldAgePercentage}%
           </p>
         </div>
       </div>
-      <canvas ref={canvasRef} width={canvasWidth} height={canvasHeight} /> {/* Канвас для отрисовки */}
+      <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
     </div>
   );
 }
