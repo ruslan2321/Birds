@@ -4,15 +4,15 @@ import "../styles/SettingsModal.css";
 
 function SettingsModal({ settings, onSave, onClose, open }) {
   const defaultSettings = {
-    hawkCount: 30, // Увеличено для частых столкновений
-    doveCount: 30, // Увеличено для частых столкновений
+    hawkCount: 10, // Увеличено для частых столкновений
+    doveCount: 10, // Увеличено для частых столкновений
     speed: 2,
-    healthHawk: 100, // Увеличено
-    healthDove: 100, // Увеличено
-    lifeSpan: 5000, // Замедленный жизненный цикл
+    healthHawk: 40, // Увеличено
+    healthDove: 40, // Увеличено
+    lifeSpan: 8000, // Замедленный жизненный цикл
     rageThreshold: 0.5,
     birthHealthMax: 35, // Здоровье ≤ 35 для рождения
-    birthProbability: 0.5, // 50% шанс рождения
+    birthProbability: 1, // 50% шанс рождения
     birthAgeMin: 100, // Раннее рождение
     birthAgeMax: 5000, // До конца жизни
     birthCooldown: 30, // Частое рождение
@@ -96,7 +96,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
             value={formSettings.healthHawk}
             onChange={handleChange("healthHawk")}
             min={1}
-            max={100} // Увеличено
+            max={40} // Увеличено
             step={1}
             valueLabelDisplay="auto"
             aria-label="Здоровье ястребов"
@@ -108,7 +108,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
             value={formSettings.healthDove}
             onChange={handleChange("healthDove")}
             min={1}
-            max={100} // Увеличено
+            max={40} // Увеличено
             step={1}
             valueLabelDisplay="auto"
             aria-label="Здоровье голубей"
