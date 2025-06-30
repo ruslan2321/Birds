@@ -4,12 +4,19 @@ import "../styles/SettingsModal.css";
 
 function SettingsModal({ settings, onSave, onClose, open }) {
   const defaultSettings = {
-    hawkCount: 10,
-    doveCount: 10,
+    hawkCount: 30, // Увеличено для частых столкновений
+    doveCount: 30, // Увеличено для частых столкновений
     speed: 2,
-    healthHawk: 40,
-    healthDove: 40,
-    lifeSpan: 1000,
+    healthHawk: 100, // Увеличено
+    healthDove: 100, // Увеличено
+    lifeSpan: 5000, // Замедленный жизненный цикл
+    rageThreshold: 0.5,
+    birthHealthMax: 35, // Здоровье ≤ 35 для рождения
+    birthProbability: 0.5, // 50% шанс рождения
+    birthAgeMin: 100, // Раннее рождение
+    birthAgeMax: 5000, // До конца жизни
+    birthCooldown: 30, // Частое рождение
+    maxBirds: 100, // Большая популяция
   };
 
   const [formSettings, setFormSettings] = useState({
@@ -20,6 +27,12 @@ function SettingsModal({ settings, onSave, onClose, open }) {
     healthDove: settings?.healthDove ?? defaultSettings.healthDove,
     lifeSpan: settings?.lifeSpan ?? defaultSettings.lifeSpan,
     rageThreshold: settings?.rageThreshold ?? defaultSettings.rageThreshold,
+    birthHealthMax: settings?.birthHealthMax ?? defaultSettings.birthHealthMax,
+    birthProbability: settings?.birthProbability ?? defaultSettings.birthProbability,
+    birthAgeMin: settings?.birthAgeMin ?? defaultSettings.birthAgeMin,
+    birthAgeMax: settings?.birthAgeMax ?? defaultSettings.birthAgeMax,
+    birthCooldown: settings?.birthCooldown ?? defaultSettings.birthCooldown,
+    maxBirds: settings?.maxBirds ?? defaultSettings.maxBirds,
   });
 
   const handleChange = (name) => (event, value) => {
@@ -83,7 +96,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
             value={formSettings.healthHawk}
             onChange={handleChange("healthHawk")}
             min={1}
-            max={40}
+            max={100} // Увеличено
             step={1}
             valueLabelDisplay="auto"
             aria-label="Здоровье ястребов"
@@ -95,7 +108,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
             value={formSettings.healthDove}
             onChange={handleChange("healthDove")}
             min={1}
-            max={40}
+            max={100} // Увеличено
             step={1}
             valueLabelDisplay="auto"
             aria-label="Здоровье голубей"
@@ -107,7 +120,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
             value={formSettings.lifeSpan}
             onChange={handleChange("lifeSpan")}
             min={1000}
-            max={5000}
+            max={10000} // Увеличено для гибкости
             step={100}
             valueLabelDisplay="auto"
             aria-label="Жизненный цикл"
