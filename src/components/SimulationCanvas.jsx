@@ -25,19 +25,19 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
     BIRD_HEIGHT: 45, // Высота спрайта птицы
     FRAMES_PER_SPRITE: 10, // Кадры для смены спрайтов анимации
     TIME_LIFE: Number(settings.lifeSpan) || 6000, // Жизненный цикл (кадры)
-    COLLISION_RADIUS: 45 / 2, // Радиус столкновений
+    COLLISION_RADIUS: 15, // Радиус столкновений (уменьшен для меньшего числа столкновений)
     GRAVITY: 0.08, // Гравитация для падения
     FADE_DELAY: 60, // Задержка затухания при смерти
     LERP_FACTOR: 0.1, // Коэффициент интерполяции движения
     CANVAS_WIDTH: 1280, // Ширина холста
     CANVAS_HEIGHT: 450, // Высота холста
-    RAGE_THRESHOLD: Math.min(Math.max(Number(settings.rageThreshold) || 0.5, 0), 1), // Порог ярости ястребов
+    RAGE_THRESHOLD: Math.min(Math.max(Number(settings.rageThreshold) || 0.7, 0), 1), // Порог ярости ястребов (увеличен)
     RAGE_DURATION: Number(settings.rageDuration) || 300, // Длительность ярости
     RAGE_DAMAGE_MULTIPLIER: 1.5, // Множитель урона в ярости
-    RAGE_SPEED_MULTIPLIER: 1.3, // Множитель скорости в ярости
+    RAGE_SPEED_MULTIPLIER: 1.2, // Множитель скорости в ярости (уменьшен)
     DOVE_DAMAGE: Number(settings.doveDamage) || 2, // Урон голубя
-    HAWK_DOVE_DAMAGE: 5, // Урон ястреба голубю
-    HAWK_HAWK_DAMAGE: 5, // Урон ястреба ястребу
+    HAWK_DOVE_DAMAGE: 3, // Урон ястреба голубю (уменьшен)
+    HAWK_HAWK_DAMAGE: 4, // Урон ястреба ястребу (уменьшен)
     BIRTH_HEALTH_MAX: Number(settings.birthHealthMax) || 35, // Макс. здоровье для рождения
     BIRTH_PROBABILITY: Number(settings.birthProbability) || 0.5, // Вероятность рождения
     BIRTH_AGE_MIN: Number(settings.birthAgeMin) || 100, // Мин. возраст для рождения
@@ -46,6 +46,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
     BIRTH_RADIUS: Number(settings.birthRadius) || 20, // Радиус появления потомства
     MAX_BIRDS: Number(settings.maxBirds) || 100, // Макс. количество птиц
     INVINCIBILITY_DURATION: 180, // Длительность неуязвимости новых птиц (кадры, ~3 сек при 60 FPS)
+    MAX_FEATHERS: 200, // Максимальное количество частиц перьев
   };
 
   // Вычисление процентов для UI
@@ -193,7 +194,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
           this.lastBirthFrame = frameCounterRef.current;
         }
 
-        // Проверка смерти от старости
+        // Проверка наявности смерти от старости
         if (this.age >= CONFIG.TIME_LIFE) {
           this.isFalling = true;
           this.fallVelocity = 0;
@@ -254,13 +255,15 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
         const dy = bird1.currentY + CONFIG.BIRD_HEIGHT / 2 - (bird2.currentY + CONFIG.BIRD_HEIGHT / 2);
         const distance = Math.hypot(dx, dy);
         if (distance < CONFIG.COLLISION_RADIUS * 2) {
-          // Генерация 3-5 перьев в точке столкновения
-          const featherCount = Math.floor(Math.random() * 3) + 3;
-          const collisionX = (bird1.currentX + bird2.currentX) / 2 + CONFIG.BIRD_WIDTH / 2;
-          const collisionY = (bird1.currentY + bird2.currentY) / 2 + CONFIG.BIRD_HEIGHT / 2;
-          for (let i = 0; i < featherCount; i++) {
-            const featherType = isHawkHawk ? "hawk" : isDoveDove ? "dove" : Math.random() < 0.5 ? "hawk" : "dove";
-            feathersRef.current.push(new FeatherParticle(collisionX, collisionY, featherType));
+          // Генерация 2-3 перьев в точке столкновения, если не превышен лимит
+          if (feathersRef.current.length < CONFIG.MAX_FEATHERS) {
+            const featherCount = Math.floor(Math.random() * 2) + 2; // Уменьшено до 2-3 перьев
+            const collisionX = (bird1.currentX + bird2.currentX) / 2 + CONFIG.BIRD_WIDTH / 2;
+            const collisionY = (bird1.currentY + bird2.currentY) / 2 + CONFIG.BIRD_HEIGHT / 2;
+            for (let i = 0; i < featherCount; i++) {
+              const featherType = isHawkHawk ? "hawk" : isDoveDove ? "dove" : Math.random() < 0.5 ? "hawk" : "dove";
+              feathersRef.current.push(new FeatherParticle(collisionX, collisionY, featherType));
+            }
           }
 
           const appliedDamage = (bird1.isEnraged || bird2.isEnraged) && !isDoveDove ? damage * CONFIG.RAGE_DAMAGE_MULTIPLIER : damage;
@@ -273,9 +276,9 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
             bird2.health -= appliedDamage;
           }
 
-          // Увеличение ярости ястребов
-          if (bird1.type === "hawk") bird1.rage = Math.min(bird1.rage + 0.1, 1);
-          if (bird2.type === "hawk") bird2.rage = Math.min(bird2.rage + 0.1, 1);
+          // Увеличение ярости ястребов (уменьшен прирост)
+          if (bird1.type === "hawk") bird1.rage = Math.min(bird1.rage + 0.05, 1);
+          if (bird2.type === "hawk") bird2.rage = Math.min(bird2.rage + 0.05, 1);
 
           // Активация ярости
           if (bird1.type === "hawk" && bird1.rage >= CONFIG.RAGE_THRESHOLD && !bird1.isEnraged) {
@@ -304,6 +307,14 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
             bird2.opacity = 1;
             bird2.fallAngle = bird2.angle;
           }
+
+          // Добавление отталкивания после столкновения
+          const pushStrength = 2; // Сила отталкивания
+          const angle = Math.atan2(dy, dx);
+          bird1.goalX += Math.cos(angle) * pushStrength;
+          bird1.goalY += Math.sin(angle) * pushStrength;
+          bird2.goalX -= Math.cos(angle) * pushStrength;
+          bird2.goalY -= Math.sin(angle) * pushStrength;
         }
       }
     };
