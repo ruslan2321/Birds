@@ -59,7 +59,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
           <Slider
             value={formSettings.hawkCount}
             onChange={handleChange("hawkCount")}
-            min={0}
+            min={1}
             max={50}
             step={1}
             valueLabelDisplay="auto"
@@ -71,7 +71,7 @@ function SettingsModal({ settings, onSave, onClose, open }) {
           <Slider
             value={formSettings.doveCount}
             onChange={handleChange("doveCount")}
-            min={0}
+            min={1}
             max={50}
             step={1}
             valueLabelDisplay="auto"

@@ -31,13 +31,13 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
     LERP_FACTOR: 0.1, // Коэффициент интерполяции движения
     CANVAS_WIDTH: 1280, // Ширина холста
     CANVAS_HEIGHT: 450, // Высота холста
-    RAGE_THRESHOLD: Math.min(Math.max(Number(settings.rageThreshold) || 0.7, 0), 1), // Порог ярости ястребов (увеличен)
+    RAGE_THRESHOLD: Math.min(Math.max(Number(settings.rageThreshold) || 0.7, 0), 1), // Порог ярости ястребов
     RAGE_DURATION: Number(settings.rageDuration) || 300, // Длительность ярости
     RAGE_DAMAGE_MULTIPLIER: 1.5, // Множитель урона в ярости
-    RAGE_SPEED_MULTIPLIER: 1.2, // Множитель скорости в ярости (уменьшен)
+    RAGE_SPEED_MULTIPLIER: 1.2, // Множитель скорости в ярости
     DOVE_DAMAGE: Number(settings.doveDamage) || 2, // Урон голубя
-    HAWK_DOVE_DAMAGE: 3, // Урон ястреба голубю (уменьшен)
-    HAWK_HAWK_DAMAGE: 4, // Урон ястреба ястребу (уменьшен)
+    HAWK_DOVE_DAMAGE: 3, // Урон ястреба голубю
+    HAWK_HAWK_DAMAGE: 4, // Урон ястреба ястребу
     BIRTH_HEALTH_MAX: Number(settings.birthHealthMax) || 35, // Макс. здоровье для рождения
     BIRTH_PROBABILITY: Number(settings.birthProbability) || 0.5, // Вероятность рождения
     BIRTH_AGE_MIN: Number(settings.birthAgeMin) || 100, // Мин. возраст для рождения
@@ -163,7 +163,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
         this.age++; // Увеличение возраста
         this.invincibilityTimer = Math.max(0, this.invincibilityTimer - 1); // Уменьшение таймера неуязвимости
 
-        // Механика рождения
+        // Механика рождения (обычная)
         if (
           this.health <= CONFIG.BIRTH_HEALTH_MAX &&
           this.age >= CONFIG.BIRTH_AGE_MIN &&
@@ -194,8 +194,31 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
           this.lastBirthFrame = frameCounterRef.current;
         }
 
-        // Проверка наявности смерти от старости
+        // Проверка смерти от старости
         if (this.age >= CONFIG.TIME_LIFE) {
+          // Создание новой птицы при смерти от старости, если не превышен лимит
+          if ((this.type === "hawk" ? hawksRef.current.length : dovesRef.current.length) < CONFIG.MAX_BIRDS) {
+            const angle = Math.random() * 2 * Math.PI;
+            const birthX = Math.max(
+              0,
+              Math.min(this.currentX + Math.cos(angle) * CONFIG.BIRTH_RADIUS, CONFIG.CANVAS_WIDTH - CONFIG.BIRD_WIDTH)
+            );
+            const birthY = Math.max(
+              0,
+              Math.min(this.currentY + Math.sin(angle) * CONFIG.BIRTH_RADIUS, CONFIG.CANVAS_HEIGHT - CONFIG.BIRD_HEIGHT)
+            );
+
+            if (this.type === "hawk") {
+              hawksRef.current.push(new Bird(birthX, birthY, this.speed, "hawk"));
+              setHawkCount((prev) => prev + 1);
+              setInitialHawkCount((prev) => prev + 1);
+            } else {
+              dovesRef.current.push(new Bird(birthX, birthY, this.speed, "dove"));
+              setDoveCount((prev) => prev + 1);
+              setInitialDoveCount((prev) => prev + 1);
+            }
+          }
+
           this.isFalling = true;
           this.fallVelocity = 0;
           this.fadeTimer = 0;
@@ -447,7 +470,7 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
       ctx.restore();
     });
 
-    // Удаление погибших птиц и обновление счётчиков старости
+    // Удаление погибших птиц и обновление счетчиков старости
     const dovesToRemove = dovesRef.current.filter((dove) => dove.remove);
     const hawksToRemove = hawksRef.current.filter((hawk) => hawk.remove);
     if (dovesToRemove.length > 0) {
