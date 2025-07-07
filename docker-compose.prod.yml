@@ -1,0 +1,8 @@
+services:
+  egen:
+    hostname: birds-egen
+    image: docker-registry.tattelecom.digital/birds-egen:latest
+    container_name: birds-egen
+    restart: always
+    ports:
+      - 8081:80

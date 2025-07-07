@@ -1,0 +1,4 @@
+include:
+  - project: 'dev/shared/gitlab-ci'
+    ref: 'master'
+    file: 'birds-egen/main-gitlab-ci.yml'

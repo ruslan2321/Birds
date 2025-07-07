@@ -3,7 +3,7 @@
   flex-direction: column;
   align-items: center;
   font-family: Arial, sans-serif;
-  background-image: url('/image/bg.jpg');
+  background-image: url("/image/bg.jpg");
   background-size: 80rem 37rem;
   background-repeat: no-repeat;
   min-height: 100vh;
@@ -12,9 +12,11 @@
 .controls {
   margin: 10px;
 }
-@media (max-width: 990px) {
-  .app{
-    width: 39rem;
-    height: 85rem;
+
+
+@media screen and (min-width: 900px) and (min-height: 600px){
+  .app {
+   width: 1920px;
+  background-size: 100% 100%;
   }
 }

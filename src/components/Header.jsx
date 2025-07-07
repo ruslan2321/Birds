@@ -1,11 +1,11 @@
 import React from 'react';
-import styles from './header.module.scss';
+import styles from '../styles/header.module.scss';
 import { Button } from '@mui/material';
 
 function Header({ isRunning, setIsRunning, setIsModalOpen }) {
   return (
 		<header className='header'>
-			<h2>Симуляция Ястребы и голуби»</h2>
+			<h2>Симуляция «Ястребы и голуби»</h2>
 			<Button
 				onClick={() => setIsRunning(!isRunning)}
 				className='header-button'

@@ -6,6 +6,9 @@
   background-color: transparent;
 }
 
+
+/* CANVAS_WIDTH: 1280, // Ширина холста
+    CANVAS_HEIGHT: 450, // Высота холста */
 .bird-counter {
   display: flex;
   align-items: center;
@@ -31,17 +34,18 @@
   height: 2rem;
 }
 
+canvas{
+  width: auto;
+  height: auto;
+}
+
 p{
     font-size: 12px;
   }
 
-.simulation-canvas {
-  width: 1422px;
-  height: 585px;
-}
-@media (max-width: 990px) {
-  .simulation-canvas {
-    width: 36rem;
-    height: 78rem;
+@media screen and (min-width: 900px) and (min-height: 600px){
+  canvas{
+    width: 1920px;
+    height: 820px;
   }
 }

@@ -21,8 +21,8 @@ function SimulationCanvas({ settings, isRunning, setIsImagesLoaded }) {
 
   // Конфигурация симуляции с параметрами из настроек
   const CONFIG = {
-    BIRD_WIDTH: 45, // Ширина спрайта птицы
-    BIRD_HEIGHT: 45, // Высота спрайта птицы
+    BIRD_WIDTH: 35, // Ширина спрайта птицы
+    BIRD_HEIGHT: 35, // Высота спрайта птицы
     FRAMES_PER_SPRITE: 10, // Кадры для смены спрайтов анимации
     TIME_LIFE: Number(settings.lifeSpan) || 6000, // Жизненный цикл (кадры)
     COLLISION_RADIUS: 15, // Радиус столкновений (уменьшен для меньшего числа столкновений)
